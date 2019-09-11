@@ -28,7 +28,7 @@ public abstract class BlockPistonBaseMixin {
 
     @Redirect(method = "canPush", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;hasTileEntity()Z"))
     private static boolean canPushTE(Block block) {
-        if (CarpetSettings.movableTileEntities) {
+        if (!CarpetSettings.movableTileEntities) {
             return block.hasTileEntity();
         }
 
