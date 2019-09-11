@@ -16,6 +16,10 @@
     "PlayerListMixin",
     "ContainerMixin",
 
-    "ISPacketPlayerListHeaderFooterMixin"
+    "ISPacketPlayerListHeaderFooterMixin",
+
+    "BlockPistonBaseMixin",
+    "PistonTileEntityMixin",
+    "WorldMixin"
   ]
 }

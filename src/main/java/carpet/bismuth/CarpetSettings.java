@@ -51,6 +51,9 @@ public class CarpetSettings
     @Rule(desc = "Dropping entire stacks works also from on the crafting UI result slot", category = {FIX, SURVIVAL})
     @SurvivalDefault
     public static boolean ctrlQCraftingFix = false;
+
+    @Rule(desc = "Movable tile entities.", category = FEATURE)
+    public static boolean movableTileEntities = false;
     
     
     
