@@ -81,4 +81,11 @@ public abstract class MixinPlayerList {
 			}
 		}
 	}
+
+	@Inject(method = "writePlayerData", at = @At("HEAD"), cancellable = true)
+	private void checkFakePlayer(EntityPlayerMP player, CallbackInfo ci){
+		if (player instanceof EntityPlayerMPFake){
+			ci.cancel();
+		}
+	}
 }

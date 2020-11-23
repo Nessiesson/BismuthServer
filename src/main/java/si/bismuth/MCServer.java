@@ -30,9 +30,9 @@ public class MCServer {
 	public static DCBot bot;
 	private static final Ingredient PAPER = Ingredient.fromItem(Items.PAPER);
 	private static final Ingredient SULPHUR = Ingredient.fromItem(Items.GUNPOWDER);
-	private static final IRecipe duration1 = new ShapelessRecipes("rocket", makeFirework(1), NonNullList.from(PAPER, SULPHUR));
-	private static final IRecipe duration2 = new ShapelessRecipes("rocket", makeFirework(2), NonNullList.from(PAPER, SULPHUR, SULPHUR));
-	private static final IRecipe duration3 = new ShapelessRecipes("rocket", makeFirework(3), NonNullList.from(PAPER, SULPHUR, SULPHUR, SULPHUR));
+	private static final IRecipe duration1 = new ShapelessRecipes("rocket", makeFirework(1), NonNullList.from(Ingredient.EMPTY, PAPER, SULPHUR));
+	private static final IRecipe duration2 = new ShapelessRecipes("rocket", makeFirework(2), NonNullList.from(Ingredient.EMPTY, PAPER, SULPHUR, SULPHUR));
+	private static final IRecipe duration3 = new ShapelessRecipes("rocket", makeFirework(3), NonNullList.from(Ingredient.EMPTY, PAPER, SULPHUR, SULPHUR, SULPHUR));
 
 	static {
 		CraftingManager.register("bismuth:durationone", duration1);
@@ -54,7 +54,7 @@ public class MCServer {
 		MCServer.server = server;
 	}
 
-	public static void onServerLoaded(MinecraftServer server) throws LoginException {
+	public static void onServerLoaded(MinecraftServer server) throws LoginException, InterruptedException {
 		server.setMOTD("v" + BISMUTH_SERVER_VERSION + " \u2014 " + server.getMOTD());
 		LoggerRegistry.initLoggers(server);
 		MCServer.bot = new DCBot(((DedicatedServer) server).getStringProperty("botToken", ""), server.isServerInOnlineMode());

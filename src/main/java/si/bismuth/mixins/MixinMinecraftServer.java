@@ -21,7 +21,7 @@ public abstract class MixinMinecraftServer {
 	}
 
 	@Inject(method = "loadAllWorlds", at = @At("HEAD"))
-	private void onLoadAllWorlds(CallbackInfo ci) throws LoginException {
+	private void onLoadAllWorlds(CallbackInfo ci) throws LoginException, InterruptedException {
 		MCServer.onServerLoaded((MinecraftServer) (Object) this);
 	}
 

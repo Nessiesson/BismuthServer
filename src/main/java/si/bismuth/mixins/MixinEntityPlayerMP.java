@@ -31,6 +31,9 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IRecip
 	@Shadow
 	public abstract BlockPos getPosition();
 
+	@Shadow
+	public abstract Entity getSpectatingEntity();
+
 	public MixinEntityPlayerMP(World world, GameProfile profile) {
 		super(world, profile);
 	}
@@ -67,7 +70,7 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IRecip
 	@Inject(method = "onUpdate", at = @At("RETURN"))
 	private void postOnUpdate(CallbackInfo ci) {
 		this.clearDupeItem();
-		if (this.isSpectator()) {
+		if (this.isSpectator() && this.getSpectatingEntity() == this) {
 			final BlockPos pos = this.getPosition();
 			final Block block = this.world.getBlockState(pos).getBlock();
 			if (block == Blocks.PORTAL) {

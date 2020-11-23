@@ -17,7 +17,7 @@ import si.bismuth.utils.SpawnReporter;
 
 @Mixin(WorldEntitySpawner.class)
 public abstract class MixinWorldEntitySpawner {
-	private static final EnumCreatureType[] OVERWORLD = new EnumCreatureType[]{EnumCreatureType.MONSTER, EnumCreatureType.CREATURE, EnumCreatureType.WATER_CREATURE};
+	private static final EnumCreatureType[] OVERWORLD = new EnumCreatureType[]{EnumCreatureType.MONSTER, EnumCreatureType.CREATURE, EnumCreatureType.WATER_CREATURE, EnumCreatureType.AMBIENT};
 	private static final EnumCreatureType[] OTHERWORLD = new EnumCreatureType[]{EnumCreatureType.MONSTER};
 	@Shadow
 	@Final

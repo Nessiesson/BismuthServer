@@ -1,6 +1,5 @@
 package si.bismuth.discord;
 
-import net.dv8tion.jda.api.AccountType;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.EmbedType;
@@ -36,12 +35,13 @@ public class DCBot extends ListenerAdapter {
 	private final boolean isTestServer;
 	private final JDA jda;
 
-	public DCBot(String token, boolean isOnlineMode) throws LoginException {
+	public DCBot(String token, boolean isOnlineMode) throws LoginException, InterruptedException {
 		isTestServer = !isOnlineMode;
-		this.jda = new JDABuilder(AccountType.BOT)
-				.setToken(token)
+		this.jda = JDABuilder
+				.createDefault(token)
 				.addEventListeners(this)
-				.build();
+				.build()
+				.awaitReady();
 		this.sendToDiscord("Server started!");
 	}
 
@@ -84,10 +84,12 @@ public class DCBot extends ListenerAdapter {
 			symbol.getStyle().setColor(TextFormatting.BLUE).setHoverEvent(hoverText).setClickEvent(clickText);
 			final ITextComponent text = new TextComponentTranslation("chat.type.text", name, content);
 			for (Message.Attachment file : attachments) {
-				final String url = file.getUrl();
-				final ITextComponent fileUrl = new TextComponentString(" " + url);
-				fileUrl.getStyle().setColor(TextFormatting.BLUE).setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url));
-				text.appendSibling(fileUrl);
+				final ITextComponent fileName = new TextComponentString(" " + file.getFileName());
+				fileName.getStyle()
+						.setColor(TextFormatting.BLUE)
+						.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Open attachment")))
+						.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, file.getUrl()));
+				text.appendSibling(fileName);
 			}
 
 			MCServer.server.addScheduledTask(() -> MCServer.server.getPlayerList().sendMessage(new TextComponentString("").appendSibling(symbol).appendSibling(text)));

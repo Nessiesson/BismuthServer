@@ -1,10 +1,14 @@
 package si.bismuth.patches;
 
+import com.google.common.collect.Lists;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.play.server.SPacketEntityHeadLook;
 import net.minecraft.network.play.server.SPacketEntityTeleport;
+import net.minecraft.scoreboard.IScoreCriteria;
+import net.minecraft.scoreboard.ScoreObjective;
+import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerInteractionManager;
 import net.minecraft.tileentity.TileEntitySkull;
@@ -12,6 +16,7 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.world.GameType;
 import net.minecraft.world.WorldServer;
 
+import java.util.Collection;
 import java.util.UUID;
 
 @SuppressWarnings("EntityConstructor")
@@ -25,6 +30,8 @@ public class EntityPlayerMPFake extends EntityPlayerMP {
 	private double setZ;
 	private float setYaw;
 	private float setPitch;
+
+	private final Scoreboard scoreboard = new FakeScoreboard();
 
 	private EntityPlayerMPFake(MinecraftServer server, WorldServer worldIn, GameProfile profile, PlayerInteractionManager interactionManagerIn) {
 		super(server, worldIn, profile, interactionManagerIn);
@@ -114,5 +121,17 @@ public class EntityPlayerMPFake extends EntityPlayerMP {
 
 	public void resetToSetPosition() {
 		setLocationAndAngles(setX, setY, setZ, setYaw, setPitch);
+	}
+
+	@Override
+	public Scoreboard getWorldScoreboard() {
+		return this.scoreboard;
+	}
+
+	private class FakeScoreboard extends Scoreboard {
+		@Override
+		public Collection<ScoreObjective> getObjectivesFromCriteria(IScoreCriteria criteria) {
+			return Lists.newArrayList();
+		}
 	}
 }

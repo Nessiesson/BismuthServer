@@ -44,6 +44,8 @@
 		"MixinTileEntityPiston",
 		"MixinWorld",
 		"MixinWorldEntitySpawner",
-		"MixinWorldServer"
+		"MixinWorldServer",
+		"MixinScore",
+		"MixinScoreboardSaveData"
 	]
 }
