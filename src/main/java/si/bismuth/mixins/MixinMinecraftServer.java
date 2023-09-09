@@ -25,6 +25,11 @@ public abstract class MixinMinecraftServer {
 		MCServer.onServerLoaded((MinecraftServer) (Object) this);
 	}
 
+	@Inject(method = "stopServer", at = @At("HEAD"))
+	private void onStopServer(CallbackInfo ci) {
+		MCServer.onServerStop((MinecraftServer) (Object) this);
+	}
+
 	@Redirect(method = "run", at = @At(value = "INVOKE", target = "Lorg/apache/logging/log4j/Logger;warn(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V", ordinal = 0, remap = false))
 	private void silenceCantKeepUp(Logger logger, String message, Object p0, Object p1) {
 		// noop

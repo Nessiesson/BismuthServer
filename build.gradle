@@ -17,7 +17,7 @@ apply plugin: "net.minecraftforge.gradle.tweaker-server"
 apply plugin: "org.spongepowered.mixin"
 apply plugin: "com.github.johnrengelman.shadow"
 
-project.version = "1.2.4"
+project.version = "1.2.5"
 group = "si.bismuth" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "bismuthserver"
 def tweakerClass = "${group}.launch.BismuthTweaker"
@@ -49,28 +49,28 @@ mixin {
 
 sourceSets.main.ext.refMap = "mixins.bismuthserver.refmap.json"
 
-repositories {
-	maven { url = "https://repo.spongepowered.org/repository/maven-public/" }
-	mavenCentral()
-}
-
 dependencies {
-	compile "net.dv8tion:JDA:4.2.0_168"
+	compile "net.dv8tion:JDA:5.0.0-alpha.20"
 	compile "org.spongepowered:mixin:0.8.3"
 	compile "org.ow2.asm:asm-debug-all:5.2"
-	compile "net.sf.jopt-simple:jopt-simple:5.0.3"
+	compile 'net.sf.jopt-simple:jopt-simple:5.0.4'
 	compile "com.eclipsesource.minimal-json:minimal-json:0.9.5"
-	compile "org.apache.logging.log4j:log4j-api:2.8.1"
-	compile "org.apache.logging.log4j:log4j-core:2.8.1"
-	compile "com.google.guava:guava:21.0"
-	compile "org.apache.commons:commons-lang3:3.5"
-	compile "commons-io:commons-io:2.5"
-	compile "com.google.code.gson:gson:2.8.0"
+	compile 'org.apache.logging.log4j:log4j-api:2.19.0'
+	compile 'org.apache.logging.log4j:log4j-core:2.19.0'
+	compile 'com.google.guava:guava:31.1-jre'
+	compile 'org.apache.commons:commons-lang3:3.12.0'
+	compile 'commons-io:commons-io:2.11.0'
+	compile 'com.google.code.gson:gson:2.9.0'
 	provided "org.ow2.asm:asm-all:5.2"
 }
 
 shadowJar {
 	classifier = ""
+}
+
+repositories {
+	maven { url = "https://repo.spongepowered.org/repository/maven-public/" }
+	mavenCentral()
 }
 tasks.build.dependsOn(shadowJar)
 

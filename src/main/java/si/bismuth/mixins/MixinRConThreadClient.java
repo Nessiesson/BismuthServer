@@ -77,6 +77,7 @@ public abstract class MixinRConThreadClient extends RConThreadBase {
 							}
 
 							this.sendLoginFailedResponse();
+							this.logInfo("Authorization failed on RCON connection from " + this.clientSocket.getInetAddress());
 							break;
 						case 3:
 							final String s = RConUtils.getBytesAsString(this.buffer, 12, i);
@@ -88,9 +89,11 @@ public abstract class MixinRConThreadClient extends RConThreadBase {
 
 							this.loggedIn = false;
 							this.sendLoginFailedResponse();
+							this.logInfo("Authorization failed on RCON connection from " + this.clientSocket.getInetAddress());
 							break;
 						default:
 							this.sendMultipacketResponse(id, String.format("Unknown request %s", Integer.toHexString(type)));
+							this.logInfo(String.format("Unknown RCON request %s from " + this.clientSocket.getInetAddress(), Integer.toHexString(type)));
 							break;
 					}
 				}

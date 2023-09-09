@@ -14,6 +14,7 @@ public class BismuthTweaker implements ITweaker {
 		MixinBootstrap.init();
 		Mixins.addConfiguration("mixins.bismuthserver.json");
 		Mixins.addConfiguration("mixins.bismuthserver.movablete.json");
+		Mixins.addConfiguration("mixins.bismuthserver.scoreboard.json");
 		//Mixins.addConfiguration("mixins.bismuthserver.ebictranslononation.json");
 	}
 

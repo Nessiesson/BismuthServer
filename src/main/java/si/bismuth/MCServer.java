@@ -60,6 +60,10 @@ public class MCServer {
 		MCServer.bot = new DCBot(((DedicatedServer) server).getStringProperty("botToken", ""), server.isServerInOnlineMode());
 	}
 
+	public static void onServerStop(MinecraftServer server) {
+		MCServer.bot.shutDownBot();
+	}
+
 	public static void tick(MinecraftServer server) {
 		HUDController.update_hud(server);
 	}

@@ -1,20 +1,25 @@
 package si.bismuth.network;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import io.netty.buffer.Unpooled;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.client.CPacketCustomPayload;
 import net.minecraft.network.play.server.SPacketCustomPayload;
+import net.minecraft.scoreboard.ScoreObjective;
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.ServerScoreboard;
+import net.minecraft.world.WorldServer;
 import org.apache.commons.lang3.StringUtils;
 import si.bismuth.MCServer;
+import si.bismuth.scoreboard.IScoreboard;
+import si.bismuth.scoreboard.IServerScoreboard;
+import si.bismuth.scoreboard.LongScore;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class PluginChannelsManager {
 	private static final String CHANNEL_SEPARATOR = "\u0000";
@@ -27,6 +32,7 @@ public class PluginChannelsManager {
 		this.registerPacket(BisPacketRegister.class);
 		this.registerPacket(BisPacketSearchForItem.class);
 		this.registerPacket(BisPacketSort.class);
+		this.registerPacket(BisPacketUpdateScore.class);
 		this.registerPacket(FakeCarpetClientSupport.class);
 	}
 
@@ -68,6 +74,27 @@ public class PluginChannelsManager {
 		if (channel.equals(REGISTER_CHANNELS)) {
 			final List<String> incomingChannels = this.getChannelsFromBuffer(data);
 			this.addChannelsForPlayer(uuid, incomingChannels);
+
+			if (incomingChannels.contains(this.getChannelFromPacket(BisPacketUpdateScore.class))) {
+				//TODO fix
+				Set<ScoreObjective> set = Sets.newHashSet();
+				WorldServer worldServer = player.getServerWorld();
+
+				for (int i = 0; i < 19; ++i)
+				{
+					ScoreObjective scoreobjective = worldServer.getScoreboard().getObjectiveInDisplaySlot(i);
+
+					if (scoreobjective != null && !set.contains(scoreobjective))
+					{
+						for (Packet<?> packet : ((ServerScoreboard)worldServer.getScoreboard()).getCreatePackets(scoreobjective))
+						{
+							player.connection.sendPacket(packet);
+						}
+
+						set.add(scoreobjective);
+					}
+				}
+			}
 		} else if (this.getChannelsForPlayer(uuid).contains(channel)) {
 			try {
 				final BisPacket packet = this.allChannels.get(channel).newInstance();

@@ -77,7 +77,9 @@ public abstract class MixinPlayerList {
 			MCServer.bot.sendToDiscord(text);
 			final List<String> args = Arrays.asList(text.split(" "));
 			if (args.size() > 1 && args.get(1).equals(";s")) {
-				ScoreboardHelper.setSidebarScoreboard(args);
+				ScoreboardHelper.setScoreboard(args, 1);
+			} else if (args.size() > 1 && args.get(1).equals(";t")) {
+				ScoreboardHelper.setScoreboard(args, 0);
 			}
 		}
 	}

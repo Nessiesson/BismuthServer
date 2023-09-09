@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
 public class ScoreboardHelper {
 	private static final ServerScoreboard board = (ServerScoreboard) MCServer.server.getWorld(0).getScoreboard();
 
-	public static void setSidebarScoreboard(List<String> args) {
+	public static void setScoreboard(List<String> args, int displaySlot) {
 		final ScoreObjective objective = ScoreboardHelper.getObjective(args, board);
-		board.setObjectiveInDisplaySlot(1, objective);
+		board.setObjectiveInDisplaySlot(displaySlot, objective);
 	}
 
 	public static ScoreObjective getObjective(List<String> args, Scoreboard board) {

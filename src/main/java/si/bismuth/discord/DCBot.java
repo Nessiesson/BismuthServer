@@ -5,11 +5,12 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.EmbedType;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
@@ -24,6 +25,7 @@ import si.bismuth.MCServer;
 
 import javax.security.auth.login.LoginException;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 public class DCBot extends ListenerAdapter {
@@ -37,12 +39,23 @@ public class DCBot extends ListenerAdapter {
 
 	public DCBot(String token, boolean isOnlineMode) throws LoginException, InterruptedException {
 		isTestServer = !isOnlineMode;
+
+		EnumSet<GatewayIntent> intents = EnumSet.of(
+				// Enables MessageReceivedEvent for guild (also known as servers)
+				GatewayIntent.GUILD_MESSAGES,
+				GatewayIntent.MESSAGE_CONTENT
+		);
+
 		this.jda = JDABuilder
-				.createDefault(token)
+				.createLight(token, intents)
 				.addEventListeners(this)
 				.build()
 				.awaitReady();
 		this.sendToDiscord("Server started!");
+	}
+
+	public void shutDownBot() {
+		this.jda.shutdown();
 	}
 
 	public void sendToDiscord(String message) {
@@ -121,7 +134,7 @@ public class DCBot extends ListenerAdapter {
 				final String title = String.format("%d player%s online:", players.length, players.length != 1 ? "s" : "");
 				final MessageEmbed.AuthorInfo author = new MessageEmbed.AuthorInfo("BismuthBot", null, "https://i.imgur.com/a2w3DjI.png", null);
 				final MessageEmbed embed = new MessageEmbed(null, title, StringUtils.join(players, "\n").replaceAll("_", "\\\\_"), EmbedType.RICH, null, 0x8665BD, null, null, author, null, null, null, null);
-				channel.sendMessage(embed).queue();
+				channel.sendMessageEmbeds(embed).queue();
 			});
 		}
 	}
