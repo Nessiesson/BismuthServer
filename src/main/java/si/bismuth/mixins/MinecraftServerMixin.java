@@ -21,7 +21,7 @@ public class MinecraftServerMixin {
 	}
 
 	@Inject(method = "loadWorld", at = @At("HEAD"))
-	private void onLoadAllWorlds(CallbackInfo ci) throws LoginException, InterruptedException {
+	private void onLoadWorld(CallbackInfo ci) throws LoginException, InterruptedException {
 		MCServer.onServerLoaded((MinecraftServer) (Object) this);
 	}
 

@@ -12,7 +12,7 @@ import si.bismuth.MCServer;
 @Mixin(GameModeCommand.class)
 public class GameModeCommandMixin {
 	@Inject(method = "parseGameMode", at = @At("RETURN"), cancellable = true)
-	private void onGetGameModeFromCommand(CommandSource sender, String mode, CallbackInfoReturnable<GameMode> cir) {
+	private void onParseGameMode(CommandSource sender, String mode, CallbackInfoReturnable<GameMode> cir) {
 		if (!MCServer.server.isOnlineMode()) {
 			return;
 		}

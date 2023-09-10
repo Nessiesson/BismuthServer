@@ -17,7 +17,7 @@ public class WorldChunkMixin {
 	private World world;
 
 	@Redirect(method = "setBlockState", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/WorldChunk;getBlockEntity(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/world/chunk/WorldChunk$BlockEntityCreationType;)Lnet/minecraft/block/entity/BlockEntity;", ordinal = 1))
-	private BlockEntity worldGetTileEntity(WorldChunk chunk, BlockPos pos, WorldChunk.BlockEntityCreationType mode) {
+	private BlockEntity worldGetBlockEntity(WorldChunk chunk, BlockPos pos, WorldChunk.BlockEntityCreationType mode) {
 		return this.world.getBlockEntity(pos);
 	}
 }

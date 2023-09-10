@@ -10,15 +10,15 @@ import si.bismuth.utils.InventoryHelper;
 import java.io.IOException;
 
 @PacketChannelName("searchforitem")
-public class BisPacketSearchForItem extends BisPacket {
+public class SearchForItemPacket extends BisPacket {
 	private ItemStack stack;
 	private DefaultedList<BlockPos> result;
 
-	public BisPacketSearchForItem() {
+	public SearchForItemPacket() {
 		// noop
 	}
 
-	public BisPacketSearchForItem(DefaultedList<BlockPos> listIn) {
+	public SearchForItemPacket(DefaultedList<BlockPos> listIn) {
 		this.result = listIn;
 	}
 

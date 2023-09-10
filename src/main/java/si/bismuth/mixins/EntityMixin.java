@@ -36,13 +36,13 @@ public class EntityMixin {
 	}
 
 	@Inject(method = "writeEntityNbt", at = @At(value = "INVOKE", target = "Lnet/minecraft/nbt/NbtCompound;putUuid(Ljava/lang/String;Ljava/util/UUID;)V", shift = At.Shift.AFTER, ordinal = 0))
-	private void AABBNBT(NbtCompound compound, CallbackInfoReturnable<NbtCompound> cir) {
+	private void writeAabNbt(NbtCompound compound, CallbackInfoReturnable<NbtCompound> cir) {
 		final Box bb = this.getShape();
 		compound.put("AABB", this.toNbtList(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ));
 	}
 
 	@Redirect(method = "readEntityNbt", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;shouldSetPositionOnLoad()Z"))
-	private boolean readAABBNBT(Entity entity, NbtCompound compound) {
+	private boolean readAabNbt(Entity entity, NbtCompound compound) {
 		if (this.shouldSetPositionOnLoad()) {
 			this.setPosition(this.x, this.y, this.z);
 		}

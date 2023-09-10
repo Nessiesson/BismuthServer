@@ -68,7 +68,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity implements IR
 	}
 
 	@Inject(method = "tick", at = @At("RETURN"))
-	private void postOnUpdate(CallbackInfo ci) {
+	private void postTick(CallbackInfo ci) {
 		this.clearDupeItem();
 		if (this.isSpectator() && this.getCamera() == this) {
 			final BlockPos pos = this.getSourceBlockPos();

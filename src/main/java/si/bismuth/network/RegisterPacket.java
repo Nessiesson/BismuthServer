@@ -4,10 +4,10 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.entity.living.player.ServerPlayerEntity;
 
 @PacketChannelName("register")
-public class BisPacketRegister extends BisPacket {
+public class RegisterPacket extends BisPacket {
 	private static final int CURRENT_BISMUTH_PROTOCOL_ID = 1;
 
-	public BisPacketRegister() {
+	public RegisterPacket() {
 		// noop
 	}
 

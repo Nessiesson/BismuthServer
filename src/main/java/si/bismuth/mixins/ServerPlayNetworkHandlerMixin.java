@@ -27,7 +27,7 @@ public class ServerPlayNetworkHandlerMixin {
 	public ServerPlayerEntity player;
 
 	@Inject(method = "handleCustomPayload", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/packet/c2s/play/CustomPayloadC2SPacket;getChannel()Ljava/lang/String;"), cancellable = true)
-	private void onProcessCustomPayload(CustomPayloadC2SPacket packet, CallbackInfo ci) {
+	private void handleCustomPayload(CustomPayloadC2SPacket packet, CallbackInfo ci) {
 		if (MCServer.pcm.processIncoming(this.player, packet)) {
 			ci.cancel();
 		}
@@ -55,7 +55,7 @@ public class ServerPlayNetworkHandlerMixin {
 	}
 
 	@Redirect(method = "handleInteractEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/entity/living/player/ServerPlayerEntity;interact(Lnet/minecraft/entity/Entity;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"))
-	private InteractionResult onRightClickVillager(ServerPlayerEntity player, Entity entity, InteractionHand hand) {
+	private InteractionResult onInteractVillager(ServerPlayerEntity player, Entity entity, InteractionHand hand) {
 		if (this.player.isSneaking() && entity instanceof VillagerEntity) {
 			final VillagerEntity villager = (VillagerEntity) entity;
 			final SimpleInventory inventory = villager.getVillagerInventory();

@@ -28,7 +28,7 @@ public abstract class ItemEntityMixin implements IRecipeBookItemDuper {
 	}
 
 	@Inject(method = "tryMerge", at = @At("HEAD"), cancellable = true)
-	private void preSearchForOtherItemsNearby(CallbackInfo ci) {
+	private void preTryMerge(CallbackInfo ci) {
 		final ItemStack stack = this.getItemStack();
 		if (stack.getSize() >= stack.getMaxSize()) {
 			ci.cancel();

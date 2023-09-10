@@ -25,36 +25,36 @@ import java.util.List;
 @Mixin(PistonBaseBlock.class)
 public class PistonBaseBlockMixin {
 	@Unique
-	private List<BlockEntity> tileEntitiesList;
+	private List<BlockEntity> blockEntitiesToMove;
 
 	@Redirect(method = "canMoveBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;hasBlockEntity()Z"))
-	private static boolean canPushTE(Block block) {
-		return block.hasBlockEntity() && !isPushableTileEntityBlock(block);
+	private static boolean canMoveBlockEntity(Block block) {
+		return block.hasBlockEntity() && !isMovableBlockEntityBlock(block);
 	}
 
-	private static boolean isPushableTileEntityBlock(Block block) {
+	private static boolean isMovableBlockEntityBlock(Block block) {
 		return block != Blocks.ENDER_CHEST && block != Blocks.ENCHANTING_TABLE && block != Blocks.END_GATEWAY
 				&& block != Blocks.END_PORTAL && block != Blocks.MOB_SPAWNER && block != Blocks.MOVING_BLOCK;
 	}
 
 	@Inject(method = "move", at = @At(value = "INVOKE", target = "Ljava/util/List;size()I", remap = false, ordinal = 4), locals = LocalCapture.CAPTURE_FAILHARD)
-	private void doMoveTE(World world, BlockPos p, Direction d, boolean e, CallbackInfoReturnable<Boolean> cir, PistonMoveStructureResolver bpsh, List<BlockPos> list) {
-		this.tileEntitiesList = Lists.newArrayList();
+	private void moveBlockEntity(World world, BlockPos p, Direction d, boolean e, CallbackInfoReturnable<Boolean> cir, PistonMoveStructureResolver bpsh, List<BlockPos> list) {
+		this.blockEntitiesToMove = Lists.newArrayList();
 		for (BlockPos pos : list) {
-			final BlockEntity te = world.getBlockEntity(pos);
-			this.tileEntitiesList.add(te);
-			if (te != null) {
+			final BlockEntity be = world.getBlockEntity(pos);
+			this.blockEntitiesToMove.add(be);
+			if (be != null) {
 				world.removeBlockEntity(pos);
-				te.markDirty();
+				be.markDirty();
 			}
 		}
 	}
 
 	@Inject(method = "move", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;setBlockEntity(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/entity/BlockEntity;)V", shift = At.Shift.AFTER, ordinal = 0), locals = LocalCapture.CAPTURE_FAILHARD)
-	private void setTileEntityTE(World world, BlockPos p, Direction d, boolean ex, CallbackInfoReturnable<Boolean> cir, PistonMoveStructureResolver bpsh, List<BlockPos> list, List<BlockState> lbs, List<BlockPos> lbp, int i, BlockState[] abs, Direction enumfacing, int l, BlockPos pos) {
-		final BlockEntity te = world.getBlockEntity(pos);
-		if (te instanceof MovingBlockEntity) {
-			((IMovingBlockEntity) te).setCarriedBlockEntity(this.tileEntitiesList.get(l));
+	private void setMovedBlockEntity(World world, BlockPos p, Direction d, boolean ex, CallbackInfoReturnable<Boolean> cir, PistonMoveStructureResolver bpsh, List<BlockPos> list, List<BlockState> lbs, List<BlockPos> lbp, int i, BlockState[] abs, Direction enumfacing, int l, BlockPos pos) {
+		final BlockEntity be = world.getBlockEntity(pos);
+		if (be instanceof MovingBlockEntity) {
+			((IMovingBlockEntity) be).setCarriedBlockEntity(this.blockEntitiesToMove.get(l));
 		}
 	}
 }

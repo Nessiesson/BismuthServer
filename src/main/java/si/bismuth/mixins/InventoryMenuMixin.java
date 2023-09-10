@@ -22,7 +22,7 @@ public class InventoryMenuMixin {
 	public List<InventorySlot> slots;
 
 	@Redirect(method = "onClickSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/slot/InventorySlot;hasStack()Z", ordinal = 0), slice = @Slice(from = @At(value = "FIELD", target = "Lnet/minecraft/inventory/menu/ActionType;THROW:Lnet/minecraft/inventory/menu/ActionType;", opcode = Opcodes.GETSTATIC)))
-	private boolean onSlotClick(InventorySlot slot, int id, int dragType, ActionType clickType, PlayerEntity player) {
+	private boolean onClickSlot(InventorySlot slot, int id, int dragType, ActionType clickType, PlayerEntity player) {
 		if (slot != null && slot.hasStack() && slot.canPickUp(player)) {
 			final ItemStack stack = slot.removeStack(slot.getStack().getSize());
 			slot.onStackRemovedByPlayer(player, stack);

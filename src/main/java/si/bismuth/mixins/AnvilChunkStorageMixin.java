@@ -77,12 +77,12 @@ public class AnvilChunkStorageMixin implements FileIoCallback {
 	}
 
 	@Redirect(method = "doesChunkExist", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;", remap = false))
-	private Object onIsChunkGeneratedAt(Map<ChunkPos, NbtCompound> map, Object key) {
+	private Object onDoesChunkExist(Map<ChunkPos, NbtCompound> map, Object key) {
 		return reloadChunkFromRemoveQueues(this.copyOfChunkPos2);
 	}
 
 	@Inject(method = "queueChunkSave", at = @At("HEAD"), cancellable = true)
-	private void onAddChunkToPending(ChunkPos pos, NbtCompound compound, CallbackInfo ci) {
+	private void onQueueChunkSave(ChunkPos pos, NbtCompound compound, CallbackInfo ci) {
 		if (!this.chunksInWrite.containsKey(pos)) {
 			queueChunkToRemove(pos, compound);
 		}

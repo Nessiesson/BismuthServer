@@ -89,7 +89,7 @@ public abstract class XpOrbEntityMixin extends Entity implements si.bismuth.util
 	}
 
 	@Inject(method = "tick", at = @At("HEAD"))
-	private void onOrbUpdate(CallbackInfo ci) {
+	private void onTick(CallbackInfo ci) {
 		if (--delayBeforeCombine > 0) {
 			this.searchAndCombine();
 		}

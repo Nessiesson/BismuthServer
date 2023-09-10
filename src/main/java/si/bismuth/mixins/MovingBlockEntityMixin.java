@@ -27,26 +27,26 @@ public class MovingBlockEntityMixin extends BlockEntity {
 	private float lastProgress;
 
 	@Inject(method = "readNbt", at = @At(value = "FIELD", target = "Lnet/minecraft/block/entity/MovingBlockEntity;lastProgress:F", opcode = Opcodes.PUTFIELD, shift = At.Shift.AFTER))
-	private void readPistonSerialization(NbtCompound compound, CallbackInfo ci) {
+	private void readNbt(NbtCompound compound, CallbackInfo ci) {
 		if (compound.isType("lastProgress", 5)) {
 			this.lastProgress = this.progress;
 		}
 	}
 
 	@Redirect(method = "writeNbt", at = @At(value = "INVOKE", target = "Lnet/minecraft/nbt/NbtCompound;putFloat(Ljava/lang/String;F)V"))
-	private void writePistonSerialization(NbtCompound compound, String key, float value) {
+	private void writeNbt(NbtCompound compound, String key, float value) {
 		compound.putFloat("progress", this.progress);
 		compound.putFloat("lastProgress", this.lastProgress);
 	}
 
 	@Inject(method = "tick", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/world/World;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/BlockState;I)Z"))
-	private void onUpdate(CallbackInfo ci) {
+	private void tick(CallbackInfo ci) {
 		final BlockState state = this.world.getBlockState(this.pos);
 		this.world.onBlockChanged(pos.offset(state.get(PistonHeadBlock.FACING).getOpposite()), state, state, 0);
 	}
 
 	@Inject(method = "moveEntities", at = @At(value = "INVOKE", target = "Ljava/lang/ThreadLocal;set(Ljava/lang/Object;)V", ordinal = 1, shift = At.Shift.AFTER, remap = false), locals = LocalCapture.CAPTURE_FAILHARD)
-	public void updateEntity(float f, CallbackInfo ci, Direction face, double d0, List<Box> list, Box bb, List<Entity> list1, boolean isSlime, int i, Entity entity) {
+	public void tickEntity(float f, CallbackInfo ci, Direction face, double d0, List<Box> list, Box bb, List<Entity> list1, boolean isSlime, int i, Entity entity) {
 		this.world.tickEntity(entity, false);
 	}
 }

@@ -42,7 +42,7 @@ public class WorldMixin {
 	}
 
 	@Redirect(method = "tickEntities", at = @At(value = "INVOKE", target = "Ljava/util/List;isEmpty()Z", ordinal = 0, remap = false))
-	private boolean fasterTEremoval(List<BlockEntity> list) {
+	private boolean fasterBlockEntityRemoval(List<BlockEntity> list) {
 		if (!this.removedBlockEntities.isEmpty()) {
 			final Set<BlockEntity> remove = Collections.newSetFromMap(new IdentityHashMap<>());
 			remove.addAll(this.removedBlockEntities);
@@ -65,7 +65,7 @@ public class WorldMixin {
 	}
 
 	@Inject(method = "tickEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiler/Profiler;pop()V", ordinal = 1))
-	private void postUpdateEntities(CallbackInfo ci) {
+	private void postTickEntities(CallbackInfo ci) {
 		Profiler.end_current_entity_section();
 	}
 
@@ -86,7 +86,7 @@ public class WorldMixin {
 	}
 
 	@Inject(method = "tickEntities", at = @At("RETURN"))
-	private void onEndUpdateEntities(CallbackInfo ci) {
+	private void onEndTickEntities(CallbackInfo ci) {
 		Profiler.end_current_section();
 	}
 

@@ -23,10 +23,10 @@ public class PluginChannelsManager {
 	private final Map<UUID, List<String>> channelList = new HashMap<>();
 
 	public PluginChannelsManager() {
-		this.registerPacket(BisPacketGetInventory.class);
-		this.registerPacket(BisPacketRegister.class);
-		this.registerPacket(BisPacketSearchForItem.class);
-		this.registerPacket(BisPacketSort.class);
+		this.registerPacket(GetInventoryPacket.class);
+		this.registerPacket(RegisterPacket.class);
+		this.registerPacket(SearchForItemPacket.class);
+		this.registerPacket(SortPacket.class);
 		this.registerPacket(FakeCarpetClientSupport.class);
 	}
 

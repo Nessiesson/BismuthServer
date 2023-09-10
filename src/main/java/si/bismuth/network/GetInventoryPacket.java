@@ -10,15 +10,15 @@ import net.minecraft.util.math.BlockPos;
 import si.bismuth.MCServer;
 
 @PacketChannelName("getinventory")
-public class BisPacketGetInventory extends BisPacket {
+public class GetInventoryPacket extends BisPacket {
 	private BlockPos pos;
 	private DefaultedList<ItemStack> result;
 
-	public BisPacketGetInventory() {
+	public GetInventoryPacket() {
 		// noop
 	}
 
-	public BisPacketGetInventory(DefaultedList<ItemStack> listIn) {
+	public GetInventoryPacket(DefaultedList<ItemStack> listIn) {
 		this.result = listIn;
 	}
 
@@ -50,6 +50,6 @@ public class BisPacketGetInventory extends BisPacket {
 			inventory.set(i, container.getStack(i));
 		}
 
-		MCServer.pcm.sendPacketToPlayer(player, new BisPacketGetInventory(inventory));
+		MCServer.pcm.sendPacketToPlayer(player, new GetInventoryPacket(inventory));
 	}
 }

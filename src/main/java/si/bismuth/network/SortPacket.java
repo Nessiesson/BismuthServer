@@ -7,10 +7,10 @@ import si.bismuth.utils.InventoryHelper;
 
 // Stolen from/based on code from https://github.com/kyrptonaught/Inventory-Sorter
 @PacketChannelName("sort")
-public class BisPacketSort extends BisPacket {
+public class SortPacket extends BisPacket {
 	private boolean isPlayerInv;
 
-	public BisPacketSort() {
+	public SortPacket() {
 		// noop
 	}
 

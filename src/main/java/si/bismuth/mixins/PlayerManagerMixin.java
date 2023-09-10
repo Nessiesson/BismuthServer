@@ -27,24 +27,24 @@ public class PlayerManagerMixin {
 	private ServerPlayerEntity mycopy;
 
 	@Inject(method = "add", at = @At(value = "RETURN"))
-	private void onPlayerLoggedIn(ServerPlayerEntity player, CallbackInfo ci) {
+	private void add(ServerPlayerEntity player, CallbackInfo ci) {
 		MCServer.playerConnected(player);
 	}
 
 	@Inject(method = "remove", at = @At(value = "HEAD"))
-	private void onPlayerLoggedOut(ServerPlayerEntity player, CallbackInfo ci) {
+	private void remove(ServerPlayerEntity player, CallbackInfo ci) {
 		MCServer.playerDisconnected(player);
 	}
 
 	@Inject(method = "onLogin", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/server/PlayerManager;load(Lnet/minecraft/server/entity/living/player/ServerPlayerEntity;)Lnet/minecraft/nbt/NbtCompound;"))
-	private void onInitializeConnectionToPlayer(Connection manager, ServerPlayerEntity player, CallbackInfo ci) {
+	private void onLogin(Connection manager, ServerPlayerEntity player, CallbackInfo ci) {
 		if (player instanceof FakeServerPlayerEntity) {
 			((FakeServerPlayerEntity) player).resetToSetPosition();
 		}
 	}
 
 	@Redirect(method = "onLogin", at = @At(value = "NEW", target = "net/minecraft/network/NetHandlerPlayServer"))
-	private ServerPlayNetworkHandler replaceNetHandler(MinecraftServer server, Connection manager, ServerPlayerEntity player) {
+	private ServerPlayNetworkHandler replaceNetworkHandlerForFakePlayers(MinecraftServer server, Connection manager, ServerPlayerEntity player) {
 		return player instanceof FakeServerPlayerEntity ? new FakeServerPlayNetworkHandler(server, manager, player) : new ServerPlayNetworkHandler(server, manager, player);
 	}
 
@@ -64,14 +64,14 @@ public class PlayerManagerMixin {
 	}
 
 	@Inject(method = "teleportEntityToDimension", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, ordinal = 0, target = "Lnet/minecraft/profiler/Profiler;endSection()V"))
-	private void onTransferEntityToWorld(Entity entity, int lastDimension, ServerWorld oldWorld, ServerWorld newWorld, CallbackInfo ci) {
+	private void onTeleportEntityToDimension(Entity entity, int lastDimension, ServerWorld oldWorld, ServerWorld newWorld, CallbackInfo ci) {
 		if (entity.isLoaded && ((IServerWorld) oldWorld).callIsChunkLoadedAt(entity.chunkX, entity.chunkZ, true)) {
 			oldWorld.getChunkAt(entity.chunkX, entity.chunkZ).removeEntity(entity, entity.chunkY);
 		}
 	}
 
 	@Inject(method = "sendMessage(Lnet/minecraft/text/Text;Z)V", at = @At("HEAD"))
-	private void onPlayerSendMessage(Text component, boolean isSystem, CallbackInfo ci) {
+	private void onSendMessage(Text component, boolean isSystem, CallbackInfo ci) {
 		if (!isSystem) {
 			final String text = component.buildString().replaceFirst("^<(\\S*?)>", "\u02F9`$1`\u02FC");
 			MCServer.bot.sendToDiscord(text);
@@ -83,7 +83,7 @@ public class PlayerManagerMixin {
 	}
 
 	@Inject(method = "save", at = @At("HEAD"), cancellable = true)
-	private void checkFakePlayer(ServerPlayerEntity player, CallbackInfo ci){
+	private void cancelSaveForFakePlayers(ServerPlayerEntity player, CallbackInfo ci){
 		if (player instanceof FakeServerPlayerEntity){
 			ci.cancel();
 		}
