@@ -82,6 +82,6 @@ public class MCServer {
 	}
 
 	private static void unlockCustomRecipes(ServerPlayerEntity player) {
-		player.unlockRecipes(Lists.newArrayList(duration1, duration2, duration3));
+		player.m_5474670(Lists.newArrayList(duration1, duration2, duration3));
 	}
 }
