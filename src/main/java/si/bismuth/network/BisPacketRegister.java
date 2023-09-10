@@ -1,7 +1,7 @@
 package si.bismuth.network;
 
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
 
 @PacketChannelName("register")
 public class BisPacketRegister extends BisPacket {
@@ -13,17 +13,17 @@ public class BisPacketRegister extends BisPacket {
 
 	@Override
 	public void writePacketData() {
-		final PacketBuffer buf = this.getPacketBuffer();
+		final PacketByteBuf buf = this.getPacketBuffer();
 		buf.writeVarInt(CURRENT_BISMUTH_PROTOCOL_ID);
 	}
 
 	@Override
-	public void readPacketData(PacketBuffer buf) {
+	public void readPacketData(PacketByteBuf buf) {
 		// noop
 	}
 
 	@Override
-	public void processPacket(EntityPlayerMP player) {
+	public void processPacket(ServerPlayerEntity player) {
 		// noop
 	}
 }

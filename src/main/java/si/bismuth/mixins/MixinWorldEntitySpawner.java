@@ -1,10 +1,10 @@
 package si.bismuth.mixins;
 
-import net.minecraft.entity.EnumCreatureType;
-import net.minecraft.util.Tuple;
+import net.minecraft.entity.living.mob.MobCategory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.WorldEntitySpawner;
-import net.minecraft.world.WorldServer;
+import net.minecraft.world.NaturalSpawner;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -15,22 +15,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 import si.bismuth.utils.SpawnReporter;
 
-@Mixin(WorldEntitySpawner.class)
+@Mixin(NaturalSpawner.class)
 public abstract class MixinWorldEntitySpawner {
-	private static final EnumCreatureType[] OVERWORLD = new EnumCreatureType[]{EnumCreatureType.MONSTER, EnumCreatureType.CREATURE, EnumCreatureType.WATER_CREATURE, EnumCreatureType.AMBIENT};
-	private static final EnumCreatureType[] OTHERWORLD = new EnumCreatureType[]{EnumCreatureType.MONSTER};
+	private static final MobCategory[] OVERWORLD = new MobCategory[]{MobCategory.MONSTER, MobCategory.CREATURE, MobCategory.WATER_CREATURE, MobCategory.AMBIENT};
+	private static final MobCategory[] OTHERWORLD = new MobCategory[]{MobCategory.MONSTER};
 	@Shadow
 	@Final
-	private static int MOB_COUNT_DIV;
+	private static int MOB_CAPACITY_CHUNK_AREA;
 
-	@Inject(method = "findChunksForSpawning", at = @At(value = "FIELD", target = "Lnet/minecraft/world/WorldEntitySpawner;MOB_COUNT_DIV:I", shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILHARD)
-	private void getMobcaps(WorldServer server, boolean spawnHostileMobs, boolean spawnPeacefulMobs, boolean spawnOnSetTickRate, CallbackInfoReturnable<Integer> cir, int chunkAddsToMobcap, int mobTypeSpawned, BlockPos spawnPoint, EnumCreatureType[] mobCategories, int idk, int wtf, EnumCreatureType mobCategory, int loadedOfMobCategory) {
-		final int mobCap = mobCategory.getMaxNumberOfCreature() * chunkAddsToMobcap / MOB_COUNT_DIV;
-		SpawnReporter.mobcaps.get(server.provider.getDimensionType().getId()).put(mobCategory, new Tuple<>(loadedOfMobCategory, mobCap));
+	@Inject(method = "spawnEntities", at = @At(value = "FIELD", target = "Lnet/minecraft/world/WorldEntitySpawner;MOB_CAPACITY_CHUNK_AREA:I", shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILHARD)
+	private void getMobcaps(ServerWorld server, boolean spawnHostileMobs, boolean spawnPeacefulMobs, boolean spawnOnSetTickRate, CallbackInfoReturnable<Integer> cir, int chunkAddsToMobcap, int mobTypeSpawned, BlockPos spawnPoint, MobCategory[] mobCategories, int idk, int wtf, MobCategory mobCategory, int loadedOfMobCategory) {
+		final int mobCap = mobCategory.getCap() * chunkAddsToMobcap / MOB_CAPACITY_CHUNK_AREA;
+		SpawnReporter.mobcaps.get(server.dimension.getType().getId()).put(mobCategory, new Pair<>(loadedOfMobCategory, mobCap));
 	}
 
-	@Redirect(method = "findChunksForSpawning", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/EnumCreatureType;values()[Lnet/minecraft/entity/EnumCreatureType;"))
-	private EnumCreatureType[] preventUselessMobSpawningAttemptsInIncorrectDimensions(WorldServer world) {
-		return world.provider.isSurfaceWorld() ? OVERWORLD : OTHERWORLD;
+	@Redirect(method = "spawnEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/MobCategory;values()[Lnet/minecraft/entity/MobCategory;"))
+	private MobCategory[] preventUselessMobSpawningAttemptsInIncorrectDimensions(ServerWorld world) {
+		return world.dimension.isOverworld() ? OVERWORLD : OTHERWORLD;
 	}
 }

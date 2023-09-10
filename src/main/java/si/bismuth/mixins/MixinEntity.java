@@ -1,10 +1,10 @@
 package si.bismuth.mixins;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -17,39 +17,39 @@ import si.bismuth.utils.BlockRotator;
 @Mixin(Entity.class)
 public abstract class MixinEntity {
 	// @formatter:off
-	@Shadow public double posX;
-	@Shadow public double posY;
-	@Shadow public double posZ;
-	@Shadow public float rotationYaw;
-	@Shadow public abstract AxisAlignedBB getEntityBoundingBox();
-	@Shadow protected abstract boolean shouldSetPosAfterLoading();
-	@Shadow public abstract void setEntityBoundingBox(AxisAlignedBB bb);
+	@Shadow public double x;
+	@Shadow public double y;
+	@Shadow public double z;
+	@Shadow public float yaw;
+	@Shadow public abstract Box getShape();
+	@Shadow protected abstract boolean shouldSetPositionOnLoad();
+	@Shadow public abstract void setShape(Box bb);
 	@Shadow public abstract void setPosition(double x, double y, double z);
-	@Shadow protected abstract NBTTagList newDoubleNBTList(double... numbers);
+	@Shadow protected abstract NbtList toNbtList(double... numbers);
 	// @formatter:on
 
-	@Inject(method = "getHorizontalFacing", at = @At("HEAD"), cancellable = true)
-	private void onGetHorizontalFacing(CallbackInfoReturnable<EnumFacing> cir) {
+	@Inject(method = "getDirection", at = @At("HEAD"), cancellable = true)
+	private void onGetHorizontalFacing(CallbackInfoReturnable<Direction> cir) {
 		if (BlockRotator.flippinEligibility((Entity) (Object) this)) {
-			cir.setReturnValue(EnumFacing.byHorizontalIndex(MathHelper.floor((double) (this.rotationYaw * 1F / 90F) + 0.5D) & 3).getOpposite());
+			cir.setReturnValue(Direction.byIdHorizontal(MathHelper.floor((double) (this.yaw * 1F / 90F) + 0.5D) & 3).getOpposite());
 		}
 	}
 
-	@Inject(method = "writeToNBT", at = @At(value = "INVOKE", target = "Lnet/minecraft/nbt/NBTTagCompound;setUniqueId(Ljava/lang/String;Ljava/util/UUID;)V", shift = At.Shift.AFTER, ordinal = 0))
-	private void AABBNBT(NBTTagCompound compound, CallbackInfoReturnable<NBTTagCompound> cir) {
-		final AxisAlignedBB bb = this.getEntityBoundingBox();
-		compound.setTag("AABB", this.newDoubleNBTList(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ));
+	@Inject(method = "writeEntityNbt", at = @At(value = "INVOKE", target = "Lnet/minecraft/nbt/NbtCompound;putUuid(Ljava/lang/String;Ljava/util/UUID;)V", shift = At.Shift.AFTER, ordinal = 0))
+	private void AABBNBT(NbtCompound compound, CallbackInfoReturnable<NbtCompound> cir) {
+		final Box bb = this.getShape();
+		compound.put("AABB", this.toNbtList(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ));
 	}
 
-	@Redirect(method = "readFromNBT", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;shouldSetPosAfterLoading()Z"))
-	private boolean readAABBNBT(Entity entity, NBTTagCompound compound) {
-		if (this.shouldSetPosAfterLoading()) {
-			this.setPosition(this.posX, this.posY, this.posZ);
+	@Redirect(method = "readEntityNbt", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;shouldSetPositionOnLoad()Z"))
+	private boolean readAABBNBT(Entity entity, NbtCompound compound) {
+		if (this.shouldSetPositionOnLoad()) {
+			this.setPosition(this.x, this.y, this.z);
 		}
 
-		if (compound.hasKey("AABB", 9)) {
-			final NBTTagList bb = compound.getTagList("AABB", 6);
-			this.setEntityBoundingBox(new AxisAlignedBB(bb.getDoubleAt(0), bb.getDoubleAt(1), bb.getDoubleAt(2), bb.getDoubleAt(3), bb.getDoubleAt(4), bb.getDoubleAt(5)));
+		if (compound.isType("AABB", 9)) {
+			final NbtList bb = compound.getList("AABB", 6);
+			this.setShape(new Box(bb.getDouble(0), bb.getDouble(1), bb.getDouble(2), bb.getDouble(3), bb.getDouble(4), bb.getDouble(5)));
 		}
 
 		return false;

@@ -1,30 +1,30 @@
 package si.bismuth.network;
 
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.inventory.IInventory;
+import net.minecraft.block.entity.HopperBlockEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.tileentity.TileEntityHopper;
-import net.minecraft.util.NonNullList;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.util.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import si.bismuth.MCServer;
 
 @PacketChannelName("getinventory")
 public class BisPacketGetInventory extends BisPacket {
 	private BlockPos pos;
-	private NonNullList<ItemStack> result;
+	private DefaultedList<ItemStack> result;
 
 	public BisPacketGetInventory() {
 		// noop
 	}
 
-	public BisPacketGetInventory(NonNullList<ItemStack> listIn) {
+	public BisPacketGetInventory(DefaultedList<ItemStack> listIn) {
 		this.result = listIn;
 	}
 
 	@Override
 	public void writePacketData() {
-		final PacketBuffer buf = this.getPacketBuffer();
+		final PacketByteBuf buf = this.getPacketBuffer();
 		buf.writeVarInt(this.result.size());
 		for (ItemStack stack : this.result) {
 			buf.writeItemStack(stack);
@@ -32,22 +32,22 @@ public class BisPacketGetInventory extends BisPacket {
 	}
 
 	@Override
-	public void readPacketData(PacketBuffer buf) {
+	public void readPacketData(PacketByteBuf buf) {
 		this.pos = buf.readBlockPos();
 	}
 
 	@Override
-	public void processPacket(EntityPlayerMP player) {
-		final IInventory container = TileEntityHopper.getInventoryAtPosition(player.world, this.pos.getX(), this.pos.getY(), this.pos.getZ());
+	public void processPacket(ServerPlayerEntity player) {
+		final Inventory container = HopperBlockEntity.getInventoryAt(player.world, this.pos.getX(), this.pos.getY(), this.pos.getZ());
 		// silence inspection since it falsely claims that container cannot be null. :(
 		// noinspection ConstantConditions
 		if (container == null) {
 			return;
 		}
 
-		final NonNullList<ItemStack> inventory = NonNullList.withSize(container.getSizeInventory(), ItemStack.EMPTY);
-		for (int i = 0; i < container.getSizeInventory(); i++) {
-			inventory.set(i, container.getStackInSlot(i));
+		final DefaultedList<ItemStack> inventory = DefaultedList.of(container.getSize(), ItemStack.EMPTY);
+		for (int i = 0; i < container.getSize(); i++) {
+			inventory.set(i, container.getStack(i));
 		}
 
 		MCServer.pcm.sendPacketToPlayer(player, new BisPacketGetInventory(inventory));

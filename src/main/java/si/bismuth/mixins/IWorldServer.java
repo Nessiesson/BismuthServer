@@ -1,11 +1,11 @@
 package si.bismuth.mixins;
 
-import net.minecraft.world.WorldServer;
+import net.minecraft.server.world.ServerWorld;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(WorldServer.class)
+@Mixin(ServerWorld.class)
 public interface IWorldServer {
 	@Invoker
-	boolean callIsChunkLoaded(int x, int z, boolean allowEmpty);
+	boolean callIsChunkLoadedAt(int x, int z, boolean allowEmpty);
 }

@@ -2,25 +2,24 @@ package si.bismuth.patches;
 
 import com.google.common.collect.Lists;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.network.play.server.SPacketEntityHeadLook;
-import net.minecraft.network.play.server.SPacketEntityTeleport;
-import net.minecraft.scoreboard.IScoreCriteria;
-import net.minecraft.scoreboard.ScoreObjective;
+import net.minecraft.block.entity.SkullBlockEntity;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.living.player.PlayerEntity;
+import net.minecraft.network.packet.s2c.play.EntityHeadAnglesS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityTeleportS2CPacket;
 import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.ScoreboardObjective;
+import net.minecraft.scoreboard.criterion.ScoreboardCriterion;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.management.PlayerInteractionManager;
-import net.minecraft.tileentity.TileEntitySkull;
-import net.minecraft.util.DamageSource;
-import net.minecraft.world.GameType;
-import net.minecraft.world.WorldServer;
-
+import net.minecraft.server.ServerPlayerInteractionManager;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.world.GameMode;
 import java.util.Collection;
 import java.util.UUID;
 
 @SuppressWarnings("EntityConstructor")
-public class EntityPlayerMPFake extends EntityPlayerMP {
+public class EntityPlayerMPFake extends ServerPlayerEntity {
 	private double lastReportedPosX;
 	private double lastReportedPosY;
 	private double lastReportedPosZ;
@@ -33,81 +32,81 @@ public class EntityPlayerMPFake extends EntityPlayerMP {
 
 	private final Scoreboard scoreboard = new FakeScoreboard();
 
-	private EntityPlayerMPFake(MinecraftServer server, WorldServer worldIn, GameProfile profile, PlayerInteractionManager interactionManagerIn) {
+	private EntityPlayerMPFake(MinecraftServer server, ServerWorld worldIn, GameProfile profile, ServerPlayerInteractionManager interactionManagerIn) {
 		super(server, worldIn, profile, interactionManagerIn);
 	}
 
 	public static void createFake(String username, MinecraftServer server, double x, double y, double z, double yaw, double pitch, int dimension, int gamemode) {
-		WorldServer worldIn = server.getWorld(dimension);
-		PlayerInteractionManager interactionManagerIn = new PlayerInteractionManager(worldIn);
-		GameProfile gameprofile = server.getPlayerProfileCache().getGameProfileForUsername(username);
+		ServerWorld worldIn = server.getWorld(dimension);
+		ServerPlayerInteractionManager interactionManagerIn = new ServerPlayerInteractionManager(worldIn);
+		GameProfile gameprofile = server.getGameProfileCache().get(username);
 		if (gameprofile == null) {
-			UUID uuid = EntityPlayer.getUUID(new GameProfile(null, username));
+			UUID uuid = PlayerEntity.getUuid(new GameProfile(null, username));
 			gameprofile = new GameProfile(uuid, username);
 		}
 
 		gameprofile = fixSkin(gameprofile);
 		EntityPlayerMPFake instance = new EntityPlayerMPFake(server, worldIn, gameprofile, interactionManagerIn);
 		instance.setSetPosition(x, y, z, (float) yaw, (float) pitch);
-		server.getPlayerList().initializeConnectionToPlayer(new NetworkManagerFake(), instance);
-		if (instance.dimension != dimension) //player was logged in in a different dimension
+		server.getPlayerManager().onLogin(new NetworkManagerFake(), instance);
+		if (instance.dimensionId != dimension) //player was logged in in a different dimension
 		{
-			WorldServer old_world = server.getWorld(instance.dimension);
-			instance.dimension = dimension;
-			old_world.removeEntityDangerously(instance);
-			instance.isDead = false;
-			worldIn.spawnEntity(instance);
+			ServerWorld old_world = server.getWorld(instance.dimensionId);
+			instance.dimensionId = dimension;
+			old_world.removeEntityNow(instance);
+			instance.removed = false;
+			worldIn.addEntity(instance);
 			instance.setWorld(worldIn);
-			server.getPlayerList().preparePlayer(instance, old_world);
-			instance.connection.setPlayerLocation(x, y, z, (float) yaw, (float) pitch);
+			server.getPlayerManager().onChangedDimension(instance, old_world);
+			instance.networkHandler.teleport(x, y, z, (float) yaw, (float) pitch);
 			instance.interactionManager.setWorld(worldIn);
 		}
 		instance.setHealth(20.0F);
-		instance.isDead = false;
+		instance.removed = false;
 		instance.stepHeight = 0.6F;
-		interactionManagerIn.setGameType(GameType.getByID(gamemode));
-		server.getPlayerList().sendPacketToAllPlayersInDimension(new SPacketEntityHeadLook(instance, (byte) (instance.rotationYawHead * 256 / 360)), instance.dimension);
-		server.getPlayerList().sendPacketToAllPlayersInDimension(new SPacketEntityTeleport(instance), instance.dimension);
-		server.getPlayerList().serverUpdateMovingPlayer(instance);
-		instance.dataManager.set(PLAYER_MODEL_FLAG, (byte) 0x7f); // show all model layers (incl. capes)
+		interactionManagerIn.setGameMode(GameMode.byId(gamemode));
+		server.getPlayerManager().sendPacket(new EntityHeadAnglesS2CPacket(instance, (byte) (instance.headYaw * 256 / 360)), instance.dimensionId);
+		server.getPlayerManager().sendPacket(new EntityTeleportS2CPacket(instance), instance.dimensionId);
+		server.getPlayerManager().move(instance);
+		instance.dataTracker.set(VIEW_DISTANCE, (byte) 0x7f); // show all model layers (incl. capes)
 	}
 
 	private static GameProfile fixSkin(GameProfile gameProfile) {
 		if (!gameProfile.getProperties().containsKey("texture"))
-			return TileEntitySkull.updateGameProfile(gameProfile);
+			return SkullBlockEntity.updateProfile(gameProfile);
 		else
 			return gameProfile;
 	}
 
 	@Override
-	public void onKillCommand() {
+	public void discard() {
 		logout();
 	}
 
 	@Override
-	public void onUpdate() {
-		super.onUpdate();
-		this.onUpdateEntity();
+	public void tick() {
+		super.tick();
+		this.tickPlayer();
 		this.playerMoved();
 	}
 
 	@Override
-	public void onDeath(DamageSource cause) {
-		super.onDeath(cause);
+	public void onKilled(DamageSource cause) {
+		super.onKilled(cause);
 		logout();
 	}
 
 	private void logout() {
-		this.dismountRidingEntity();
-		getServer().getPlayerList().playerLoggedOut(this);
+		this.stopRiding();
+		getServer().getPlayerManager().remove(this);
 	}
 
 	private void playerMoved() {
-		if (posX != lastReportedPosX || posY != lastReportedPosY || posZ != lastReportedPosZ) {
-			server.getPlayerList().serverUpdateMovingPlayer(this);
-			lastReportedPosX = posX;
-			lastReportedPosY = posY;
-			lastReportedPosZ = posZ;
+		if (x != lastReportedPosX || y != lastReportedPosY || z != lastReportedPosZ) {
+			server.getPlayerManager().move(this);
+			lastReportedPosX = x;
+			lastReportedPosY = y;
+			lastReportedPosZ = z;
 		}
 	}
 
@@ -120,17 +119,17 @@ public class EntityPlayerMPFake extends EntityPlayerMP {
 	}
 
 	public void resetToSetPosition() {
-		setLocationAndAngles(setX, setY, setZ, setYaw, setPitch);
+		refreshPositionAndAngles(setX, setY, setZ, setYaw, setPitch);
 	}
 
 	@Override
-	public Scoreboard getWorldScoreboard() {
+	public Scoreboard getScoreboard() {
 		return this.scoreboard;
 	}
 
 	private class FakeScoreboard extends Scoreboard {
 		@Override
-		public Collection<ScoreObjective> getObjectivesFromCriteria(IScoreCriteria criteria) {
+		public Collection<ScoreboardObjective> getObjectives(ScoreboardCriterion criteria) {
 			return Lists.newArrayList();
 		}
 	}

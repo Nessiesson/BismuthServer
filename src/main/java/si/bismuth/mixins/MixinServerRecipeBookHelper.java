@@ -1,11 +1,12 @@
 package si.bismuth.mixins;
 
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.inventory.InventoryCraftResult;
-import net.minecraft.inventory.InventoryCrafting;
+import net.minecraft.crafting.recipe.CraftingRecipe;
+import net.minecraft.crafting.recipe.RecipeManager;
+import net.minecraft.inventory.CraftingInventory;
+import net.minecraft.inventory.ResultInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.IRecipe;
-import net.minecraft.util.ServerRecipeBookHelper;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,41 +14,41 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import si.bismuth.utils.IRecipeBookItemDuper;
 
-@Mixin(ServerRecipeBookHelper.class)
+@Mixin(RecipeManager.class)
 public abstract class MixinServerRecipeBookHelper {
 	@Shadow
-	private InventoryCraftResult field_194335_f;
+	private ResultInventory resultInventory;
 
 	@Shadow
-	private InventoryCrafting field_194336_g;
+	private CraftingInventory craftingInventory;
 
-	@Inject(method = "func_194327_a", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/ServerRecipeBookHelper;func_194329_b()V", shift = At.Shift.AFTER))
-	private void dupingBug(EntityPlayerMP player, IRecipe recipe, boolean b, CallbackInfo ci) {
+	@Inject(method = "clickRecipe", at = @At(value = "INVOKE", target = "Lnet/minecraft/crafting/recipe/RecipeManager;takeBackInputs()V", shift = At.Shift.AFTER))
+	private void dupingBug(ServerPlayerEntity player, CraftingRecipe recipe, boolean hasShiftDown, CallbackInfo ci) {
 		this.craftingWindowDupingBugAddedBack(player);
 	}
 
-	private void craftingWindowDupingBugAddedBack(EntityPlayerMP player) {
+	private void craftingWindowDupingBugAddedBack(ServerPlayerEntity player) {
 		final int slot = ((IRecipeBookItemDuper) player).getDupeItem();
 		if (slot == Integer.MIN_VALUE || slot == -1) {
 			return;
 		}
 
-		final ItemStack dupeItem = player.inventory.getStackInSlot(slot);
+		final ItemStack dupeItem = player.inventory.getStack(slot);
 		if (dupeItem.isEmpty()) {
 			return;
 		}
 
-		int size = dupeItem.getCount();
-		for (int j = 0; j < this.field_194336_g.getSizeInventory(); ++j) {
-			final ItemStack itemstack = this.field_194336_g.getStackInSlot(j);
+		int size = dupeItem.getSize();
+		for (int j = 0; j < this.craftingInventory.getSize(); ++j) {
+			final ItemStack itemstack = this.craftingInventory.getStack(j);
 			if (!itemstack.isEmpty()) {
-				size += itemstack.getCount();
-				itemstack.setCount(0);
+				size += itemstack.getSize();
+				itemstack.setSize(0);
 			}
 		}
 
-		dupeItem.setCount(size);
-		this.field_194335_f.clear();
+		dupeItem.setSize(size);
+		this.resultInventory.clear();
 		((IRecipeBookItemDuper) player).clearDupeItem();
 	}
 }

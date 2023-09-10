@@ -1,22 +1,22 @@
 package si.bismuth.patches;
 
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.network.NetHandlerPlayServer;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.Packet;
+import net.minecraft.network.Connection;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.server.network.handler.ServerPlayNetworkHandler;
+import net.minecraft.text.Text;
 
-public class NetHandlerPlayServerFake extends NetHandlerPlayServer {
-	public NetHandlerPlayServerFake(MinecraftServer server, NetworkManager nm, EntityPlayerMP playerIn) {
+public class NetHandlerPlayServerFake extends ServerPlayNetworkHandler {
+	public NetHandlerPlayServerFake(MinecraftServer server, Connection nm, ServerPlayerEntity playerIn) {
 		super(server, nm, playerIn);
 	}
 
 	public void sendPacket(final Packet<?> packetIn) {
 	}
 
-	public void disconnect(final ITextComponent textComponent) {
-		this.player.onKillCommand();
+	public void sendDisconnect(final Text textComponent) {
+		this.player.discard();
 	}
 }
 

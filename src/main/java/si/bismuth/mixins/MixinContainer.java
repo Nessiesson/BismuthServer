@@ -1,9 +1,9 @@
 package si.bismuth.mixins;
 
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.ClickType;
-import net.minecraft.inventory.Container;
-import net.minecraft.inventory.Slot;
+import net.minecraft.entity.living.player.PlayerEntity;
+import net.minecraft.inventory.menu.ActionType;
+import net.minecraft.inventory.menu.InventoryMenu;
+import net.minecraft.inventory.slot.InventorySlot;
 import net.minecraft.item.ItemStack;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,33 +16,33 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-@Mixin(Container.class)
+@Mixin(InventoryMenu.class)
 public abstract class MixinContainer {
 	@Shadow
-	public List<Slot> inventorySlots;
+	public List<InventorySlot> slots;
 
-	@Redirect(method = "slotClick", at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;getHasStack()Z", ordinal = 0), slice = @Slice(from = @At(value = "FIELD", target = "Lnet/minecraft/inventory/ClickType;THROW:Lnet/minecraft/inventory/ClickType;", opcode = Opcodes.GETSTATIC)))
-	private boolean onSlotClick(Slot slot, int id, int dragType, ClickType clickType, EntityPlayer player) {
-		if (slot != null && slot.getHasStack() && slot.canTakeStack(player)) {
-			final ItemStack stack = slot.decrStackSize(slot.getStack().getCount());
-			slot.onTake(player, stack);
+	@Redirect(method = "onClickSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/slot/InventorySlot;hasStack()Z", ordinal = 0), slice = @Slice(from = @At(value = "FIELD", target = "Lnet/minecraft/inventory/menu/ActionType;THROW:Lnet/minecraft/inventory/menu/ActionType;", opcode = Opcodes.GETSTATIC)))
+	private boolean onSlotClick(InventorySlot slot, int id, int dragType, ActionType clickType, PlayerEntity player) {
+		if (slot != null && slot.hasStack() && slot.canPickUp(player)) {
+			final ItemStack stack = slot.removeStack(slot.getStack().getSize());
+			slot.onStackRemovedByPlayer(player, stack);
 			player.dropItem(stack, true);
 		}
 
 		return false;
 	}
 
-	@Inject(method = "slotClick", at = @At("HEAD"), cancellable = true)
-	private void craftingHax(int id, int dragType, ClickType clickType, EntityPlayer player, CallbackInfoReturnable<ItemStack> cir) {
-		if (clickType == ClickType.THROW && player.inventory.getItemStack().isEmpty() && id >= 0) {
+	@Inject(method = "onClickSlot", at = @At("HEAD"), cancellable = true)
+	private void craftingHax(int id, int dragType, ActionType clickType, PlayerEntity player, CallbackInfoReturnable<ItemStack> cir) {
+		if (clickType == ActionType.THROW && player.inventory.getCursorStack().isEmpty() && id >= 0) {
 			ItemStack stack = ItemStack.EMPTY;
-			final Slot slot = this.inventorySlots.get(id);
-			if (slot != null && slot.canTakeStack(player)) {
+			final InventorySlot slot = this.slots.get(id);
+			if (slot != null && slot.canPickUp(player)) {
 				if (id == 0 && dragType == 1) {
-					ItemStack dropAll = this.dropAllCrafting(player, id, this.inventorySlots);
-					while (!dropAll.isEmpty() && ItemStack.areItemsEqual(slot.getStack(), dropAll)) {
+					ItemStack dropAll = this.dropAllCrafting(player, id, this.slots);
+					while (!dropAll.isEmpty() && ItemStack.matchesItem(slot.getStack(), dropAll)) {
 						stack = dropAll.copy();
-						dropAll = this.dropAllCrafting(player, id, this.inventorySlots);
+						dropAll = this.dropAllCrafting(player, id, this.slots);
 					}
 
 					cir.setReturnValue(stack);
@@ -52,23 +52,23 @@ public abstract class MixinContainer {
 		}
 	}
 
-	private ItemStack dropAllCrafting(EntityPlayer player, int index, List<Slot> inventorySlotsParam) {
+	private ItemStack dropAllCrafting(PlayerEntity player, int index, List<InventorySlot> inventorySlotsParam) {
 		ItemStack itemstack = ItemStack.EMPTY;
-		final Slot slot = inventorySlotsParam.get(index);
-		if (slot != null && slot.getHasStack()) {
+		final InventorySlot slot = inventorySlotsParam.get(index);
+		if (slot != null && slot.hasStack()) {
 			final ItemStack slotStack = slot.getStack();
 			itemstack = slotStack.copy();
 			if (index == 0) {
 				player.dropItem(itemstack, true);
-				slotStack.setCount(0);
-				slot.onSlotChange(slotStack, itemstack);
+				slotStack.setSize(0);
+				slot.onQuickMoved(slotStack, itemstack);
 			}
 
-			if (slotStack.getCount() == itemstack.getCount()) {
+			if (slotStack.getSize() == itemstack.getSize()) {
 				return ItemStack.EMPTY;
 			}
 
-			final ItemStack stackOnTake = slot.onTake(player, slotStack);
+			final ItemStack stackOnTake = slot.onStackRemovedByPlayer(player, slotStack);
 			if (index == 0) {
 				player.dropItem(stackOnTake, false);
 			}

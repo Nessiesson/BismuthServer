@@ -2,15 +2,15 @@ package si.bismuth.mixins;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.EndGatewayBlockEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
-import net.minecraft.server.management.PlayerList;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.TileEntityEndGateway;
+import net.minecraft.entity.living.player.PlayerEntity;
+import net.minecraft.server.PlayerManager;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -23,16 +23,16 @@ import si.bismuth.utils.IRecipeBookItemDuper;
 
 import javax.annotation.Nullable;
 
-@Mixin(EntityPlayerMP.class)
-public abstract class MixinEntityPlayerMP extends EntityPlayer implements IRecipeBookItemDuper {
+@Mixin(ServerPlayerEntity.class)
+public abstract class MixinEntityPlayerMP extends PlayerEntity implements IRecipeBookItemDuper {
 	@Shadow
 	public abstract boolean isSpectator();
 
 	@Shadow
-	public abstract BlockPos getPosition();
+	public abstract BlockPos getSourceBlockPos();
 
 	@Shadow
-	public abstract Entity getSpectatingEntity();
+	public abstract Entity getCamera();
 
 	public MixinEntityPlayerMP(World world, GameProfile profile) {
 		super(world, profile);
@@ -43,7 +43,7 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IRecip
 
 	@Shadow
 	@Nullable
-	public abstract Entity changeDimension(int dim);
+	public abstract Entity teleportToDimension(int dim);
 
 	@Override
 	public void clearDupeItem() {
@@ -67,29 +67,29 @@ public abstract class MixinEntityPlayerMP extends EntityPlayer implements IRecip
 		this.scanForDuping = s;
 	}
 
-	@Inject(method = "onUpdate", at = @At("RETURN"))
+	@Inject(method = "tick", at = @At("RETURN"))
 	private void postOnUpdate(CallbackInfo ci) {
 		this.clearDupeItem();
-		if (this.isSpectator() && this.getSpectatingEntity() == this) {
-			final BlockPos pos = this.getPosition();
+		if (this.isSpectator() && this.getCamera() == this) {
+			final BlockPos pos = this.getSourceBlockPos();
 			final Block block = this.world.getBlockState(pos).getBlock();
-			if (block == Blocks.PORTAL) {
-				this.setPortal(pos);
+			if (block == Blocks.NETHER_PORTAL) {
+				this.onPortalCollision(pos);
 			} else if (block == Blocks.END_PORTAL) {
-				this.changeDimension(1);
+				this.teleportToDimension(1);
 			} else if (block == Blocks.END_GATEWAY) {
-				final TileEntity te = this.world.getTileEntity(pos);
-				if (te instanceof TileEntityEndGateway) {
-					((TileEntityEndGateway) te).teleportEntity(this);
+				final BlockEntity te = this.world.getBlockEntity(pos);
+				if (te instanceof EndGatewayBlockEntity) {
+					((EndGatewayBlockEntity) te).teleport(this);
 				}
 			}
 		}
 	}
 
-	@Redirect(method = "onDeath", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/management/PlayerList;sendMessage(Lnet/minecraft/util/text/ITextComponent;)V"))
-	private void sendMessage(PlayerList list, ITextComponent component) {
-		list.sendMessage(component);
+	@Redirect(method = "onKilled", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/PlayerManager;sendSystemMessage(Lnet/minecraft/text/Text;)V"))
+	private void sendMessage(PlayerManager list, Text component) {
+		list.sendSystemMessage(component);
 		MCServer.bot.sendDeathMessage(component);
-		MCServer.log.info("Player {} died at {} {} {} in {}", this.getName(), this.posX, this.posY, this.posZ, this.world.provider.getDimensionType().getName());
+		MCServer.log.info("Player {} died at {} {} {} in {}", this.getName(), this.x, this.y, this.z, this.world.dimension.getType().getKey());
 	}
 }

@@ -1,11 +1,12 @@
 package si.bismuth.mixins;
 
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.storage.AnvilChunkLoader;
-import net.minecraft.world.storage.ThreadedFileIOBase;
+import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.chunk.storage.AnvilChunkStorage;
+import net.minecraft.world.chunk.storage.io.FileIoCallback;
+import net.minecraft.world.chunk.storage.io.FileIoThread;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -21,27 +22,27 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-@Mixin(AnvilChunkLoader.class)
-public abstract class MixinAnvilChunkLoader {
-	private final Map<ChunkPos, NBTTagCompound> chunksToSave = new HashMap<>();
-	private final Map<ChunkPos, NBTTagCompound> chunksInWrite = new HashMap<>();
+@Mixin(AnvilChunkStorage.class)
+public abstract class MixinAnvilChunkLoader implements FileIoCallback {
+	private final Map<ChunkPos, NbtCompound> chunksToSave = new HashMap<>();
+	private final Map<ChunkPos, NbtCompound> chunksInWrite = new HashMap<>();
 	private ChunkPos copyOfChunkPos1;
 	private ChunkPos copyOfChunkPos2;
 
 	@Shadow
-	protected abstract void writeChunkData(ChunkPos pos, NBTTagCompound compound);
+	protected abstract void saveChunk(ChunkPos pos, NbtCompound compound);
 
-	synchronized private void queueChunkToRemove(ChunkPos pos, NBTTagCompound compound) {
+	synchronized private void queueChunkToRemove(ChunkPos pos, NbtCompound compound) {
 		chunksToSave.put(pos, compound);
 	}
 
-	synchronized private Map.Entry<ChunkPos, NBTTagCompound> fetchChunkToWrite() {
+	synchronized private Map.Entry<ChunkPos, NbtCompound> fetchChunkToWrite() {
 		if (this.chunksToSave.isEmpty()) {
 			return null;
 		}
 
-		final Iterator<Map.Entry<ChunkPos, NBTTagCompound>> iter = this.chunksToSave.entrySet().iterator();
-		final Map.Entry<ChunkPos, NBTTagCompound> entry = iter.next();
+		final Iterator<Map.Entry<ChunkPos, NbtCompound>> iter = this.chunksToSave.entrySet().iterator();
+		final Map.Entry<ChunkPos, NbtCompound> entry = iter.next();
 		iter.remove();
 		this.chunksInWrite.put(entry.getKey(), entry.getValue());
 		return entry;
@@ -51,8 +52,8 @@ public abstract class MixinAnvilChunkLoader {
 		this.chunksInWrite.remove(pos);
 	}
 
-	synchronized private NBTTagCompound reloadChunkFromRemoveQueues(ChunkPos pos) {
-		final NBTTagCompound data = this.chunksToSave.get(pos);
+	synchronized private NbtCompound reloadChunkFromRemoveQueues(ChunkPos pos) {
+		final NbtCompound data = this.chunksToSave.get(pos);
 		if (data != null) {
 			return data;
 		}
@@ -60,33 +61,33 @@ public abstract class MixinAnvilChunkLoader {
 		return this.chunksInWrite.get(pos);
 	}
 
-	@Inject(method = "loadChunk", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;", remap = false), locals = LocalCapture.CAPTURE_FAILHARD)
-	private void copyChunkPos(World world, int x, int z, CallbackInfoReturnable<Chunk> cir, ChunkPos pos) {
+	@Inject(method = "loadChunk(Lnet/minecraft/world/World;II)Lnet/minecraft/world/chunk/WorldChunk;", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;", remap = false), locals = LocalCapture.CAPTURE_FAILHARD)
+	private void copyChunkPos(World world, int x, int z, CallbackInfoReturnable<WorldChunk> cir, ChunkPos pos) {
 		this.copyOfChunkPos1 = pos;
 	}
 
-	@Redirect(method = "loadChunk", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;", remap = false))
-	private Object onLoadChunk(Map<ChunkPos, NBTTagCompound> map, Object key) {
+	@Redirect(method = "loadChunk(Lnet/minecraft/world/World;II)Lnet/minecraft/world/chunk/WorldChunk;", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;", remap = false))
+	private Object onLoadChunk(Map<ChunkPos, NbtCompound> map, Object key) {
 		return reloadChunkFromRemoveQueues(this.copyOfChunkPos1);
 	}
 
-	@Inject(method = "isChunkGeneratedAt", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;", remap = false), locals = LocalCapture.CAPTURE_FAILHARD)
+	@Inject(method = "doesChunkExist", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;", remap = false), locals = LocalCapture.CAPTURE_FAILHARD)
 	private void copyPos(int x, int z, CallbackInfoReturnable<Boolean> cir, ChunkPos pos) {
 		this.copyOfChunkPos2 = pos;
 	}
 
-	@Redirect(method = "isChunkGeneratedAt", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;", remap = false))
-	private Object onIsChunkGeneratedAt(Map<ChunkPos, NBTTagCompound> map, Object key) {
+	@Redirect(method = "doesChunkExist", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;", remap = false))
+	private Object onIsChunkGeneratedAt(Map<ChunkPos, NbtCompound> map, Object key) {
 		return reloadChunkFromRemoveQueues(this.copyOfChunkPos2);
 	}
 
-	@Inject(method = "addChunkToPending", at = @At("HEAD"), cancellable = true)
-	private void onAddChunkToPending(ChunkPos pos, NBTTagCompound compound, CallbackInfo ci) {
+	@Inject(method = "queueChunkSave", at = @At("HEAD"), cancellable = true)
+	private void onAddChunkToPending(ChunkPos pos, NbtCompound compound, CallbackInfo ci) {
 		if (!this.chunksInWrite.containsKey(pos)) {
 			queueChunkToRemove(pos, compound);
 		}
 
-		ThreadedFileIOBase.getThreadedIOInstance().queueIO((AnvilChunkLoader) (Object) this);
+		FileIoThread.getInstance().registerCallback(this);
 		ci.cancel();
 	}
 
@@ -95,16 +96,17 @@ public abstract class MixinAnvilChunkLoader {
 	 * @reason The changes to this method are very invasive and this is the simplest way to achieve what's needed
 	 */
 	@Overwrite
-	public boolean writeNextIO() {
-		final Map.Entry<ChunkPos, NBTTagCompound> entry = this.fetchChunkToWrite();
+	@Override
+	public boolean run() {
+		final Map.Entry<ChunkPos, NbtCompound> entry = this.fetchChunkToWrite();
 		if (entry == null) {
 			return false;
 		}
 
 		final ChunkPos chunkpos = entry.getKey();
-		final NBTTagCompound compound = entry.getValue();
+		final NbtCompound compound = entry.getValue();
 		try {
-			this.writeChunkData(chunkpos, compound);
+			this.saveChunk(chunkpos, compound);
 		} catch (Exception exception) {
 			MCServer.log.error("Failed to save chunk", exception);
 		}

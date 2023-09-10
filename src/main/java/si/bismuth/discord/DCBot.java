@@ -10,13 +10,13 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.Formatting;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.TextComponentTranslation;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.event.ClickEvent;
-import net.minecraft.util.text.event.HoverEvent;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,12 +56,12 @@ public class DCBot extends ListenerAdapter {
 		}
 	}
 
-	public void sendAdvancementMessage(ITextComponent component) {
-		this.sendToDiscord("**\uD83C\uDF8A " + component.getUnformattedText() + "**");
+	public void sendAdvancementMessage(Text component) {
+		this.sendToDiscord("**\uD83C\uDF8A " + component.buildString() + "**");
 	}
 
-	public void sendDeathMessage(ITextComponent component) {
-		this.sendToDiscord("**\uD83D\uDD71 " + component.getUnformattedText() + "**");
+	public void sendDeathMessage(Text component) {
+		this.sendToDiscord("**\uD83D\uDD71 " + component.buildString() + "**");
 	}
 
 	@Override
@@ -78,21 +78,21 @@ public class DCBot extends ListenerAdapter {
 		final List<Message.Attachment> attachments = message.getAttachments();
 		if (channel.getIdLong() == ChannelID && !content.startsWith(PREFIX)) {
 			final String name = event.getMember().getEffectiveName();
-			final ITextComponent symbol = new TextComponentString("\u24B9");
-			final HoverEvent hoverText = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString(member.getUser().getAsTag()));
+			final Text symbol = new LiteralText("\u24B9");
+			final HoverEvent hoverText = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new LiteralText(member.getUser().getAsTag()));
 			final ClickEvent clickText = new ClickEvent(ClickEvent.Action.OPEN_URL, channelURL);
-			symbol.getStyle().setColor(TextFormatting.BLUE).setHoverEvent(hoverText).setClickEvent(clickText);
-			final ITextComponent text = new TextComponentTranslation("chat.type.text", name, content);
+			symbol.getStyle().setColor(Formatting.BLUE).setHoverEvent(hoverText).setClickEvent(clickText);
+			final Text text = new TranslatableText("chat.type.text", name, content);
 			for (Message.Attachment file : attachments) {
-				final ITextComponent fileName = new TextComponentString(" " + file.getFileName());
+				final Text fileName = new LiteralText(" " + file.getFileName());
 				fileName.getStyle()
-						.setColor(TextFormatting.BLUE)
-						.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("Open attachment")))
+						.setColor(Formatting.BLUE)
+						.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new LiteralText("Open attachment")))
 						.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, file.getUrl()));
-				text.appendSibling(fileName);
+				text.append(fileName);
 			}
 
-			MCServer.server.addScheduledTask(() -> MCServer.server.getPlayerList().sendMessage(new TextComponentString("").appendSibling(symbol).appendSibling(text)));
+			MCServer.server.submit(() -> MCServer.server.getPlayerManager().sendSystemMessage(new LiteralText("").append(symbol).append(text)));
 			return;
 		}
 
@@ -104,20 +104,20 @@ public class DCBot extends ListenerAdapter {
 		final String command = args[0];
 
 		if (this.isCommand(command, new String[]{"lazy"})) {
-			MCServer.server.addScheduledTask(() -> channel.sendMessage("no u").queue());
+			MCServer.server.submit(() -> channel.sendMessage("no u").queue());
 		}
 
 		if (this.isCommand(command, new String[]{"tps"})) {
-			MCServer.server.addScheduledTask(() -> {
-				final double MSPT = MathHelper.average(MCServer.server.tickTimeArray) * 1E-6D;
+			MCServer.server.submit(() -> {
+				final double MSPT = MathHelper.average(MCServer.server.averageTickTimes) * 1E-6D;
 				final double TPS = 1000D / Math.max(50, MSPT);
 				channel.sendMessage(String.format("**TPS: %.2f MSPT: %.2f**", TPS, MSPT)).queue();
 			});
 		}
 
 		if (this.isCommand(command, new String[]{"list", "players", "online"})) {
-			MCServer.server.addScheduledTask(() -> {
-				final String[] players = MCServer.server.getOnlinePlayerNames();
+			MCServer.server.submit(() -> {
+				final String[] players = MCServer.server.getPlayerNames();
 				final String title = String.format("%d player%s online:", players.length, players.length != 1 ? "s" : "");
 				final MessageEmbed.AuthorInfo author = new MessageEmbed.AuthorInfo("BismuthBot", null, "https://i.imgur.com/a2w3DjI.png", null);
 				final MessageEmbed embed = new MessageEmbed(null, title, StringUtils.join(players, "\n").replaceAll("_", "\\\\_"), EmbedType.RICH, null, 0x8665BD, null, null, author, null, null, null, null);

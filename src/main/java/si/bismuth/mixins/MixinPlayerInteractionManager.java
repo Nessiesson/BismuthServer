@@ -1,14 +1,14 @@
 package si.bismuth.mixins;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.network.play.server.SPacketBlockChange;
-import net.minecraft.server.management.PlayerInteractionManager;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
+import net.minecraft.block.state.BlockState;
+import net.minecraft.entity.living.player.PlayerEntity;
+import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
+import net.minecraft.server.ServerPlayerInteractionManager;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -18,25 +18,25 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import si.bismuth.utils.BlockRotator;
 
-@Mixin(PlayerInteractionManager.class)
+@Mixin(ServerPlayerInteractionManager.class)
 public abstract class MixinPlayerInteractionManager {
 	@Shadow
 	public World world;
 	@Shadow
-	public EntityPlayerMP player;
+	public ServerPlayerEntity player;
 
-	@Inject(method = "onBlockClicked", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;sendBlockBreakProgress(ILnet/minecraft/util/math/BlockPos;I)V"))
-	private void notifyUpdate(BlockPos pos, EnumFacing face, CallbackInfo ci) {
-		this.player.connection.sendPacket(new SPacketBlockChange(this.world, pos));
+	@Inject(method = "startMiningBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;updateBlockMiningProgress(ILnet/minecraft/util/math/BlockPos;I)V"))
+	private void notifyUpdate(BlockPos pos, Direction face, CallbackInfo ci) {
+		this.player.networkHandler.sendPacket(new BlockUpdateS2CPacket(this.world, pos));
 	}
 
-	@Redirect(method = "processRightClickBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;onBlockActivated(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/IBlockState;Lnet/minecraft/entity/player/EntityPlayer;Lnet/minecraft/util/EnumHand;Lnet/minecraft/util/EnumFacing;FFF)Z"))
-	private boolean onProcessRightClickBlock(Block block, World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing face, float hitX, float hitY, float hitZ) {
+	@Redirect(method = "useItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;use(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/BlockState;Lnet/minecraft/entity/living/player/PlayerEntity;Lnet/minecraft/world/InteractionHand;Lnet/minecraft/util/math/Direction;FFF)Z"))
+	private boolean onProcessRightClickBlock(Block block, World world, BlockPos pos, BlockState state, PlayerEntity player, InteractionHand hand, Direction face, float hitX, float hitY, float hitZ) {
 		final boolean flipped = BlockRotator.flipBlockWithCactus(world, pos, state, player, face, hitX, hitY, hitZ);
 		if (flipped) {
 			return true;
 		}
 
-		return state.getBlock().onBlockActivated(world, pos, state, player, hand, face, hitX, hitY, hitZ);
+		return state.getBlock().use(world, pos, state, player, hand, face, hitX, hitY, hitZ);
 	}
 }

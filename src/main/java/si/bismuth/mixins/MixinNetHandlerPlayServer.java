@@ -1,17 +1,17 @@
 package si.bismuth.mixins;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.inventory.InventoryBasic;
+import net.minecraft.entity.living.mob.passive.VillagerEntity;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.NetHandlerPlayServer;
-import net.minecraft.network.play.client.CPacketCustomPayload;
-import net.minecraft.network.play.server.SPacketTitle;
-import net.minecraft.util.EnumActionResult;
-import net.minecraft.util.EnumHand;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
+import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
+import net.minecraft.network.packet.s2c.play.TitlesS2CPacket;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.server.network.handler.ServerPlayNetworkHandler;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -21,59 +21,61 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import si.bismuth.MCServer;
 
-@Mixin(NetHandlerPlayServer.class)
+@Mixin(ServerPlayNetworkHandler.class)
 public abstract class MixinNetHandlerPlayServer {
 	@Shadow
-	public EntityPlayerMP player;
+	public ServerPlayerEntity player;
 
-	@Inject(method = "processCustomPayload", at = @At(value = "TAIL"))
-	private void onProcessCustomPayload(CPacketCustomPayload packet, CallbackInfo ci) {
-		MCServer.pcm.processIncoming(this.player, packet);
+	@Inject(method = "handleCustomPayload", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/packet/c2s/play/CustomPayloadC2SPacket;getChannel()Ljava/lang/String;"), cancellable = true)
+	private void onProcessCustomPayload(CustomPayloadC2SPacket packet, CallbackInfo ci) {
+		if (MCServer.pcm.processIncoming(this.player, packet)) {
+			ci.cancel();
+		}
 	}
 
-	@Redirect(method = "processPlayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/EntityPlayerMP;isInvulnerableDimensionChange()Z"))
-	private boolean preventPlayerMovedWronglyOrTooQuickly(EntityPlayerMP player) {
+	@Redirect(method = "handlePlayerMove", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/EntityPlayerMP;m_1692135()Z"))
+	private boolean preventPlayerMovedWronglyOrTooQuickly(ServerPlayerEntity player) {
 		return true;
 	}
 
-	@Redirect(method = "processPlayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/NetHandlerPlayServer;disconnect(Lnet/minecraft/util/text/ITextComponent;)V"))
-	private void debugPlayerBeingKicked(NetHandlerPlayServer handler, ITextComponent component) {
-		handler.player.sendStatusMessage(new TextComponentString("If you're using OptiFine F4 or later, disable Fast Math!"), true);
-		this.player.setPositionAndUpdate(this.player.posX, this.player.posY, this.player.posZ);
+	@Redirect(method = "handlePlayerMove", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/handler/ServerPlayNetworkHandler;sendDisconnect(Lnet/minecraft/text/Text;)V"))
+	private void debugPlayerBeingKicked(ServerPlayNetworkHandler handler, Text component) {
+		handler.player.addMessage(new LiteralText("If you're using OptiFine F4 or later, disable Fast Math!"), true);
+		this.player.teleport(this.player.x, this.player.y, this.player.z);
 	}
 
-	@Redirect(method = "processEntityAction", at = @At(value = "FIELD", target = "Lnet/minecraft/entity/player/EntityPlayerMP;motionY:D", opcode = Opcodes.GETFIELD))
-	private double mc111444(EntityPlayerMP player) {
+	@Redirect(method = "handlePlayerMovementAction", at = @At(value = "FIELD", target = "Lnet/minecraft/server/entity/living/player/ServerPlayerEntity;velocityY:D", opcode = Opcodes.GETFIELD))
+	private double mc111444(ServerPlayerEntity player) {
 		return -1D;
 	}
 
-	@Redirect(method = "processUseEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/EntityPlayerMP;canEntityBeSeen(Lnet/minecraft/entity/Entity;)Z"))
-	private boolean mc107103(EntityPlayerMP player, Entity entity) {
+	@Redirect(method = "handleInteractEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/entity/living/player/ServerPlayerEntity;canSee(Lnet/minecraft/entity/Entity;)Z"))
+	private boolean mc107103(ServerPlayerEntity player, Entity entity) {
 		return true;
 	}
 
-	@Redirect(method = "processUseEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/EntityPlayerMP;interactOn(Lnet/minecraft/entity/Entity;Lnet/minecraft/util/EnumHand;)Lnet/minecraft/util/EnumActionResult;"))
-	private EnumActionResult onRightClickVillager(EntityPlayerMP player, Entity entity, EnumHand hand) {
-		if (this.player.isSneaking() && entity instanceof EntityVillager) {
-			final EntityVillager villager = (EntityVillager) entity;
-			final InventoryBasic inventory = villager.getVillagerInventory();
+	@Redirect(method = "handleInteractEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/entity/living/player/ServerPlayerEntity;interact(Lnet/minecraft/entity/Entity;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"))
+	private InteractionResult onRightClickVillager(ServerPlayerEntity player, Entity entity, InteractionHand hand) {
+		if (this.player.isSneaking() && entity instanceof VillagerEntity) {
+			final VillagerEntity villager = (VillagerEntity) entity;
+			final SimpleInventory inventory = villager.getVillagerInventory();
 			final StringBuilder builder = new StringBuilder();
-			for (int i = 0; i < inventory.getSizeInventory(); i++) {
-				final ItemStack stack = inventory.getStackInSlot(i);
+			for (int i = 0; i < inventory.getSize(); i++) {
+				final ItemStack stack = inventory.getStack(i);
 				if (!stack.isEmpty()) {
-					builder.append(stack.getCount()).append(" ").append(stack.getDisplayName()).append(" ");
+					builder.append(stack.getSize()).append(" ").append(stack.getHoverName()).append(" ");
 				}
 			}
 
 			final String output = builder.toString();
 			if (!output.isEmpty()) {
-				final ITextComponent message = new TextComponentString(builder.toString());
-				final SPacketTitle packetOut = new SPacketTitle(SPacketTitle.Type.ACTIONBAR, message);
-				this.player.connection.sendPacket(packetOut);
-				return EnumActionResult.PASS;
+				final Text message = new LiteralText(builder.toString());
+				final TitlesS2CPacket packetOut = new TitlesS2CPacket(TitlesS2CPacket.Type.ACTIONBAR, message);
+				this.player.networkHandler.sendPacket(packetOut);
+				return InteractionResult.PASS;
 			}
 		}
 
-		return player.interactOn(entity, hand);
+		return player.interact(entity, hand);
 	}
 }

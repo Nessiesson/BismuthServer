@@ -8,14 +8,14 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(DedicatedServer.class)
 public abstract class MixinDedicatedServer {
 	@Shadow
-	private boolean guiIsEnabled;
+	private boolean hasGui;
 
 	/**
 	 * @author nessie
 	 * @reason lazy whatever, screw the server gui
 	 */
 	@Overwrite
-	public void setGuiEnabled() {
-		this.guiIsEnabled = false;
+	public void createGui() {
+		this.hasGui = false;
 	}
 }

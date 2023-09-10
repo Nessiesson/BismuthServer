@@ -1,11 +1,11 @@
 package si.bismuth.patches;
 
-import net.minecraft.network.EnumPacketDirection;
-import net.minecraft.network.NetworkManager;
+import net.minecraft.network.Connection;
+import net.minecraft.network.PacketFlow;
 
-public class NetworkManagerFake extends NetworkManager {
+public class NetworkManagerFake extends Connection {
 	NetworkManagerFake() {
-		super(EnumPacketDirection.CLIENTBOUND);
+		super(PacketFlow.CLIENTBOUND);
 	}
 
 	public void disableAutoRead() {

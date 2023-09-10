@@ -1,12 +1,11 @@
 package si.bismuth.commands;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.exception.CommandException;
+import net.minecraft.server.command.source.CommandSource;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.TextComponentString;
-
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
@@ -18,29 +17,29 @@ public class CommandPing extends CommandBismuthBase {
 	}
 
 	@Override
-	public String getUsage(ICommandSender sender) {
+	public String getUsage(CommandSource sender) {
 		return "ping [player]";
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
-		if (!(sender instanceof EntityPlayerMP)) {
+	public void run(MinecraftServer server, CommandSource sender, String[] args) throws CommandException {
+		if (!(sender instanceof ServerPlayerEntity)) {
 			return;
 		}
 
-		EntityPlayerMP player = getCommandSenderAsPlayer(sender);
+		ServerPlayerEntity player = asPlayer(sender);
 		if (args.length > 0) {
-			final EntityPlayerMP name = server.getPlayerList().getPlayerByUsername(args[0]);
+			final ServerPlayerEntity name = server.getPlayerManager().get(args[0]);
 			if (name != null) {
 				player = name;
 			}
 		}
 
-		sender.sendMessage(new TextComponentString("Ping of " + player.getName() + " is " + player.ping + "ms."));
+		sender.sendMessage(new LiteralText("Ping of " + player.getName() + " is " + player.ping + "ms."));
 	}
 
 	@Override
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
-		return args.length == 1 ? getListOfStringsMatchingLastWord(args, server.getOnlinePlayerNames()) : Collections.emptyList();
+	public List<String> getSuggestions(MinecraftServer server, CommandSource sender, String[] args, @Nullable BlockPos targetPos) {
+		return args.length == 1 ? suggestMatching(args, server.getPlayerNames()) : Collections.emptyList();
 	}
 }

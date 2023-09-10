@@ -1,11 +1,11 @@
 package si.bismuth.commands;
 
-import net.minecraft.command.CommandBase;
-import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.TextComponentString;
+import net.minecraft.server.command.AbstractCommand;
+import net.minecraft.server.command.source.CommandSource;
+import net.minecraft.text.LiteralText;
 
-public class CommandAllowGateway extends CommandBase {
+public class CommandAllowGateway extends AbstractCommand {
 	public static boolean canEnterPortal = false;
 
 	@Override
@@ -14,19 +14,19 @@ public class CommandAllowGateway extends CommandBase {
 	}
 
 	@Override
-	public String getUsage(ICommandSender sender) {
+	public String getUsage(CommandSource sender) {
 		return this.getName();
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args) {
+	public void run(MinecraftServer server, CommandSource sender, String[] args) {
 		canEnterPortal = !canEnterPortal;
 		if (canEnterPortal) {
-			sender.sendMessage(new TextComponentString("You may now enter an ungenerated gateway near spawn."
+			sender.sendMessage(new LiteralText("You may now enter an ungenerated gateway near spawn."
 					+ " Will automatically disable itself once a player goes through such a portal."
 					+ " Run command again to toggle off."));
 		} else {
-			sender.sendMessage(new TextComponentString("Blocked ungenerated gateways near spawn."));
+			sender.sendMessage(new LiteralText("Blocked ungenerated gateways near spawn."));
 		}
 	}
 }

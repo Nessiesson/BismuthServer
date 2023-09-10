@@ -4,11 +4,11 @@ import si.bismuth.logging.LogHandler;
 import si.bismuth.logging.Logger;
 import si.bismuth.logging.LoggerRegistry;
 import si.bismuth.utils.Messenger;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.command.WrongUsageException;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.exception.CommandException;
+import net.minecraft.server.command.exception.IncorrectUsageException;
+import net.minecraft.server.command.source.CommandSource;
 import net.minecraft.util.math.BlockPos;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -29,15 +29,15 @@ public class CommandLog extends CommandBismuthBase {
 	}
 
 	@Override
-	public String getUsage(ICommandSender sender) {
+	public String getUsage(CommandSource sender) {
 		return "/log (interactive menu) OR /log <logName> [?option] [player] [handler ...] OR /log <logName> clear [player]";
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
-		EntityPlayer player = null;
-		if (sender instanceof EntityPlayer) {
-			player = (EntityPlayer) sender;
+	public void run(MinecraftServer server, CommandSource sender, String[] args) throws CommandException {
+		PlayerEntity player = null;
+		if (sender instanceof PlayerEntity) {
+			player = (PlayerEntity) sender;
 		}
 
 		if (args.length == 0) {
@@ -90,15 +90,15 @@ public class CommandLog extends CommandBismuthBase {
 		// toggle to default
 		if ("clear".equalsIgnoreCase(args[0])) {
 			if (args.length > 1) {
-				player = server.getPlayerList().getPlayerByUsername(args[1]);
+				player = server.getPlayerManager().get(args[1]);
 			}
 			if (player == null) {
-				throw new WrongUsageException("No player specified");
+				throw new IncorrectUsageException("No player specified");
 			}
 			for (String logname : LoggerRegistry.getLoggerNames()) {
 				LoggerRegistry.unsubscribePlayer(player.getName(), logname);
 			}
-			notifyCommandListener(sender, this, "Unsubscribed from all logs");
+			sendSuccess(sender, this, "Unsubscribed from all logs");
 			return;
 		}
 		Logger logger = LoggerRegistry.getLogger(args[0]);
@@ -108,10 +108,10 @@ public class CommandLog extends CommandBismuthBase {
 				option = logger.getAcceptedOption(args[1]);
 			}
 			if (args.length >= 3) {
-				player = server.getPlayerList().getPlayerByUsername(args[2]);
+				player = server.getPlayerManager().get(args[2]);
 			}
 			if (player == null) {
-				throw new WrongUsageException("No player specified");
+				throw new IncorrectUsageException("No player specified");
 			}
 			LogHandler handler = null;
 			if (args.length >= 4) {
@@ -135,20 +135,20 @@ public class CommandLog extends CommandBismuthBase {
 				Messenger.m(player, "gi Unsubscribed from " + logger.getLogName() + ".");
 			}
 		} else {
-			throw new WrongUsageException("No logger named " + args[0] + ".");
+			throw new IncorrectUsageException("No logger named " + args[0] + ".");
 		}
 	}
 
 	@Override
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, BlockPos targetPos) {
+	public List<String> getSuggestions(MinecraftServer server, CommandSource sender, String[] args, BlockPos targetPos) {
 		if (args.length == 1) {
 			Set<String> options = new HashSet<>(LoggerRegistry.getLoggerNames());
 			options.add("clear");
-			return getListOfStringsMatchingLastWord(args, options);
+			return suggestMatching(args, options);
 		} else if (args.length == 2) {
 			if ("clear".equalsIgnoreCase(args[0])) {
-				List<String> players = Arrays.asList(server.getOnlinePlayerNames());
-				return getListOfStringsMatchingLastWord(args, players.toArray(new String[0]));
+				List<String> players = Arrays.asList(server.getPlayerNames());
+				return suggestMatching(args, players.toArray(new String[0]));
 			}
 			Logger logger = LoggerRegistry.getLogger(args[0]);
 			if (logger != null) {
@@ -159,13 +159,13 @@ public class CommandLog extends CommandBismuthBase {
 					options.addAll(Arrays.asList(opts));
 				else
 					options.add("on");
-				return getListOfStringsMatchingLastWord(args, options.toArray(new String[0]));
+				return suggestMatching(args, options.toArray(new String[0]));
 			}
 		} else if (args.length == 3) {
-			List<String> players = Arrays.asList(server.getOnlinePlayerNames());
-			return getListOfStringsMatchingLastWord(args, players.toArray(new String[0]));
+			List<String> players = Arrays.asList(server.getPlayerNames());
+			return suggestMatching(args, players.toArray(new String[0]));
 		} else if (args.length == 4) {
-			return getListOfStringsMatchingLastWord(args, LogHandler.getHandlerNames());
+			return suggestMatching(args, LogHandler.getHandlerNames());
 		}
 
 		return Collections.emptyList();

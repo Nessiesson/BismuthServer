@@ -1,8 +1,8 @@
 package si.bismuth.network;
 
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
 import si.bismuth.utils.InventoryHelper;
 
 // Stolen from/based on code from https://github.com/kyrptonaught/Inventory-Sorter
@@ -20,12 +20,12 @@ public class BisPacketSort extends BisPacket {
 	}
 
 	@Override
-	public void readPacketData(PacketBuffer buf) {
+	public void readPacketData(PacketByteBuf buf) {
 		this.isPlayerInv = buf.readBoolean();
 	}
 
 	@Override
-	public void processPacket(EntityPlayerMP player) {
+	public void processPacket(ServerPlayerEntity player) {
 		if (player.isSpectator()) {
 			return;
 		}
@@ -33,8 +33,8 @@ public class BisPacketSort extends BisPacket {
 		if (this.isPlayerInv) {
 			InventoryHelper.sortInv(player.inventory, 9, 27);
 		} else {
-			final IInventory inv = player.openContainer.getSlot(0).inventory;
-			InventoryHelper.sortInv(inv, 0, inv.getSizeInventory());
+			final Inventory inv = player.menu.getSlot(0).inventory;
+			InventoryHelper.sortInv(inv, 0, inv.getSize());
 		}
 	}
 }

@@ -1,12 +1,11 @@
 package si.bismuth.utils;
 
-import net.minecraft.entity.EnumCreatureType;
-import net.minecraft.util.Tuple;
-
 import java.util.HashMap;
+import net.minecraft.entity.living.mob.MobCategory;
+import net.minecraft.util.Pair;
 
 public class SpawnReporter {
-	public static final HashMap<Integer, HashMap<EnumCreatureType, Tuple<Integer, Integer>>> mobcaps = new HashMap<>();
+	public static final HashMap<Integer, HashMap<MobCategory, Pair<Integer, Integer>>> mobcaps = new HashMap<>();
 
 	static {
 		mobcaps.put(-1, new HashMap<>());

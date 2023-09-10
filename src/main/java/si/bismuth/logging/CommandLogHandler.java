@@ -1,10 +1,9 @@
 package si.bismuth.logging;
 
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.text.ITextComponent;
-
 import java.util.HashMap;
 import java.util.Map;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.text.Text;
 
 public class CommandLogHandler extends LogHandler {
 
@@ -32,14 +31,14 @@ public class CommandLogHandler extends LogHandler {
 	}
 
 	@Override
-	public void handle(EntityPlayerMP player, ITextComponent[] message, Object[] commandParams) {
+	public void handle(ServerPlayerEntity player, Text[] message, Object[] commandParams) {
 		if (commandParams == null)
 			return;
 		Map<String, String> params = paramsToMap(commandParams);
 		String command = String.join(" ", this.command);
 		for (Map.Entry<String, String> param : params.entrySet())
 			command = command.replace("$" + param.getKey(), param.getValue());
-		player.server.commandManager.executeCommand(player, command);
+		player.server.commandHandler.run(player, command);
 	}
 
 }

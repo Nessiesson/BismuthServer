@@ -1,9 +1,5 @@
 package si.bismuth.mixins;
 
-import net.minecraft.network.rcon.IServer;
-import net.minecraft.network.rcon.RConThreadBase;
-import net.minecraft.network.rcon.RConThreadClient;
-import net.minecraft.network.rcon.RConUtils;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -14,22 +10,26 @@ import si.bismuth.MCServer;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.Socket;
+import net.minecraft.server.dedicated.IDedicatedServer;
+import net.minecraft.server.rcon.BufferHelper;
+import net.minecraft.server.rcon.RconBase;
+import net.minecraft.server.rcon.RconClient;
 
-@Mixin(RConThreadClient.class)
-public abstract class MixinRConThreadClient extends RConThreadBase {
+@Mixin(RconClient.class)
+public abstract class MixinRConThreadClient extends RconBase {
 	// @formatter:off
-	@Shadow private boolean loggedIn;
-	@Shadow private Socket clientSocket;
-	@Shadow @Final private byte[] buffer;
-	@Shadow @Final private String rconPassword;
+	@Shadow private boolean authenticated;
+	@Shadow private Socket socket;
+	@Shadow @Final private byte[] packetBuffer;
+	@Shadow @Final private String password;
 	@Shadow @Final private static Logger LOGGER;
-	@Shadow protected abstract void closeSocket();
-	@Shadow protected abstract void sendLoginFailedResponse();
-	@Shadow protected abstract void sendResponse(int id, int type, String message);
-	@Shadow protected abstract void sendMultipacketResponse(int id, String message);
+	@Shadow protected abstract void close();
+	@Shadow protected abstract void executeUnknown();
+	@Shadow protected abstract void execute(int id, int type, String message);
+	@Shadow protected abstract void execute(int id, String message);
 	// @formatter:on
 
-	protected MixinRConThreadClient(IServer server, String thread) {
+	protected MixinRConThreadClient(IDedicatedServer server, String thread) {
 		super(server, thread);
 	}
 
@@ -46,51 +46,51 @@ public abstract class MixinRConThreadClient extends RConThreadBase {
 					break;
 				}
 
-				final BufferedInputStream stream = new BufferedInputStream(this.clientSocket.getInputStream());
-				final int i = stream.read(this.buffer, 0, this.buffer.length);
+				final BufferedInputStream stream = new BufferedInputStream(this.socket.getInputStream());
+				final int i = stream.read(this.packetBuffer, 0, this.packetBuffer.length);
 				if (i == -1) {
 					break;
 				}
 
 				if (i >= 10) {
-					final int k = RConUtils.getBytesAsLEInt(this.buffer, 0, i);
+					final int k = BufferHelper.getIntLE(this.packetBuffer, 0, i);
 					if (k != i - 4) {
 						break;
 					}
 
-					final int id = RConUtils.getBytesAsLEInt(this.buffer, 4, i);
-					final int type = RConUtils.getRemainingBytesAsLEInt(this.buffer, 8);
+					final int id = BufferHelper.getIntLE(this.packetBuffer, 4, i);
+					final int type = BufferHelper.getIntLE(this.packetBuffer, 8);
 					switch (type) {
 						case 2:
-							if (this.loggedIn) {
-								final String command = RConUtils.getBytesAsString(this.buffer, 12, i);
+							if (this.authenticated) {
+								final String command = BufferHelper.getString(this.packetBuffer, 12, i);
 
-								MCServer.server.addScheduledTask(() -> {
+								MCServer.server.submit(() -> {
 									try {
-										sendMultipacketResponse(id, server.handleRConCommand(command));
+										execute(id, server.runRconCommand(command));
 									} catch (Exception exception) {
-										sendMultipacketResponse(id, String.format("Error executing: %s (%s)", command, exception.getMessage()));
+										execute(id, String.format("Error executing: %s (%s)", command, exception.getMessage()));
 									}
 								});
 
 								continue;
 							}
 
-							this.sendLoginFailedResponse();
+							this.executeUnknown();
 							break;
 						case 3:
-							final String s = RConUtils.getBytesAsString(this.buffer, 12, i);
-							if (!s.isEmpty() && s.equals(this.rconPassword)) {
-								this.loggedIn = true;
-								this.sendResponse(id, 2, "");
+							final String s = BufferHelper.getString(this.packetBuffer, 12, i);
+							if (!s.isEmpty() && s.equals(this.password)) {
+								this.authenticated = true;
+								this.execute(id, 2, "");
 								continue;
 							}
 
-							this.loggedIn = false;
-							this.sendLoginFailedResponse();
+							this.authenticated = false;
+							this.executeUnknown();
 							break;
 						default:
-							this.sendMultipacketResponse(id, String.format("Unknown request %s", Integer.toHexString(type)));
+							this.execute(id, String.format("Unknown request %s", Integer.toHexString(type)));
 							break;
 					}
 				}
@@ -101,6 +101,6 @@ public abstract class MixinRConThreadClient extends RConThreadBase {
 				break;
 			}
 		}
-		this.closeSocket();
+		this.close();
 	}
 }

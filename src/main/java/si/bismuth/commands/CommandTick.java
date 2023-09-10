@@ -1,9 +1,9 @@
 package si.bismuth.commands;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.command.WrongUsageException;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.exception.CommandException;
+import net.minecraft.server.command.exception.IncorrectUsageException;
+import net.minecraft.server.command.source.CommandSource;
 import net.minecraft.util.math.BlockPos;
 import si.bismuth.utils.Profiler;
 
@@ -22,16 +22,16 @@ public class CommandTick extends CommandBismuthBase {
 	/**
 	 * Gets the usage string for the command.
 	 */
-	public String getUsage(ICommandSender sender) {
+	public String getUsage(CommandSource sender) {
 		return "Usage: tick <health|entities> [duration]";
 	}
 
 	/**
 	 * Callback for when the command is executed
 	 */
-	public void execute(final MinecraftServer server, final ICommandSender sender, String[] args) throws CommandException {
+	public void run(final MinecraftServer server, final CommandSource sender, String[] args) throws CommandException {
 		if (args.length == 0) {
-			throw new WrongUsageException(getUsage(sender));
+			throw new IncorrectUsageException(getUsage(sender));
 		}
 
 		if ("health".equalsIgnoreCase(args[0])) {
@@ -52,21 +52,21 @@ public class CommandTick extends CommandBismuthBase {
 			return;
 		}
 
-		throw new WrongUsageException(getUsage(sender));
+		throw new IncorrectUsageException(getUsage(sender));
 	}
 
-	public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos pos) {
+	public List<String> getSuggestions(MinecraftServer server, CommandSource sender, String[] args, @Nullable BlockPos pos) {
 		if (args.length == 1) {
-			return getListOfStringsMatchingLastWord(args, "health", "entities");
+			return suggestMatching(args, "health", "entities");
 		}
 
 		if (args.length == 2) {
 			if ("health".equalsIgnoreCase(args[0])) {
-				return getListOfStringsMatchingLastWord(args, "100", "200", "1000");
+				return suggestMatching(args, "100", "200", "1000");
 			}
 
 			if ("entities".equalsIgnoreCase(args[0])) {
-				return getListOfStringsMatchingLastWord(args, "100", "200", "1000");
+				return suggestMatching(args, "100", "200", "1000");
 			}
 		}
 		return Collections.emptyList();

@@ -1,8 +1,8 @@
 package si.bismuth.mixins;
 
-import net.minecraft.advancements.PlayerAdvancements;
-import net.minecraft.server.management.PlayerList;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.advancement.PlayerAdvancements;
+import net.minecraft.server.PlayerManager;
+import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -10,9 +10,9 @@ import si.bismuth.MCServer;
 
 @Mixin(PlayerAdvancements.class)
 public abstract class MixinPlayerAdvancements {
-	@Redirect(method = "grantCriterion", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/management/PlayerList;sendMessage(Lnet/minecraft/util/text/ITextComponent;)V"))
-	private void onSendAdvancement(PlayerList list, ITextComponent component) {
-		list.sendMessage(component);
+	@Redirect(method = "award", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/PlayerManager;sendSystemMessage(Lnet/minecraft/text/Text;)V"))
+	private void onSendAdvancement(PlayerManager list, Text component) {
+		list.sendSystemMessage(component);
 		MCServer.bot.sendAdvancementMessage(component);
 	}
 }

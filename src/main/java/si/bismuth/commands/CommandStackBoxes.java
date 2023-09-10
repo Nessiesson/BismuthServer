@@ -1,15 +1,15 @@
 package si.bismuth.commands;
 
-import net.minecraft.block.BlockShulkerBox;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.inventory.Slot;
-import net.minecraft.item.EnumDyeColor;
-import net.minecraft.item.ItemShulkerBox;
+import net.minecraft.block.ShulkerBoxBlock;
+import net.minecraft.inventory.slot.InventorySlot;
+import net.minecraft.item.DyeColor;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.item.ShulkerBoxItem;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.exception.CommandException;
+import net.minecraft.server.command.source.CommandSource;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import si.bismuth.mixins.IBlockShulkerBox;
@@ -24,54 +24,54 @@ public class CommandStackBoxes extends CommandBismuthBase {
 	}
 
 	@Override
-	public String getUsage(ICommandSender sender) {
+	public String getUsage(CommandSource sender) {
 		return "stackboxes";
 	}
 
 	@Override
-	public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
-		if (!(sender instanceof EntityPlayerMP)) {
+	public void run(MinecraftServer server, CommandSource sender, String[] args) throws CommandException {
+		if (!(sender instanceof ServerPlayerEntity)) {
 			throw new CommandException("Unknown " + sender.getName() + " tried to run /stackboxes!");
 		}
 
-		Map<EnumDyeColor, Integer> boxesToStack = new HashMap<>();
-		final EntityPlayerMP player = getCommandSenderAsPlayer(sender);
-		for (final Slot slot : player.inventoryContainer.inventorySlots) {
-			final Pair<EnumDyeColor, Integer> pair = getShulkerBoxColourAndAmour(slot.getStack());
+		Map<DyeColor, Integer> boxesToStack = new HashMap<>();
+		final ServerPlayerEntity player = asPlayer(sender);
+		for (final InventorySlot slot : player.playerMenu.slots) {
+			final Pair<DyeColor, Integer> pair = getShulkerBoxColourAndAmour(slot.getStack());
 			if (pair.getRight() > 0) {
 				boxesToStack.merge(pair.getLeft(), pair.getRight(), Integer::sum);
-				slot.putStack(ItemStack.EMPTY);
+				slot.setStack(ItemStack.EMPTY);
 			}
 		}
 
-		for (Map.Entry<EnumDyeColor, Integer> entry : boxesToStack.entrySet()) {
+		for (Map.Entry<DyeColor, Integer> entry : boxesToStack.entrySet()) {
 			if (entry.getValue() > 0) {
-				final ItemStack stack = new ItemStack(BlockShulkerBox.getBlockByColor(entry.getKey()), entry.getValue());
-				if (!player.addItemStackToInventory(stack)) {
+				final ItemStack stack = new ItemStack(ShulkerBoxBlock.byColor(entry.getKey()), entry.getValue());
+				if (!player.addItem(stack)) {
 					player.dropItem(stack, false);
 				}
 			}
 		}
 
-		player.inventoryContainer.detectAndSendChanges();
+		player.playerMenu.updateListeners();
 	}
 
-	private Pair<EnumDyeColor, Integer> getShulkerBoxColourAndAmour(final ItemStack stack) {
-		if (stack.getItem() instanceof ItemShulkerBox) {
-			NBTTagCompound cmp = this.getCompoundOrNull(stack);
-			if (cmp == null || cmp.getTagList("Items", 10).isEmpty()) {
-				final EnumDyeColor dye = ((IBlockShulkerBox) ((ItemShulkerBox) stack.getItem()).getBlock()).getColor();
-				return new ImmutablePair<>(dye, stack.getCount());
+	private Pair<DyeColor, Integer> getShulkerBoxColourAndAmour(final ItemStack stack) {
+		if (stack.getItem() instanceof ShulkerBoxItem) {
+			NbtCompound cmp = this.getCompoundOrNull(stack);
+			if (cmp == null || cmp.getList("Items", 10).isEmpty()) {
+				final DyeColor dye = ((IBlockShulkerBox) ((ShulkerBoxItem) stack.getItem()).getBlock()).getColor();
+				return new ImmutablePair<>(dye, stack.getSize());
 			}
 		}
 
-		return new ImmutablePair<>(EnumDyeColor.WHITE, 0);
+		return new ImmutablePair<>(DyeColor.WHITE, 0);
 	}
 
-	private NBTTagCompound getCompoundOrNull(final ItemStack stack) {
-		final NBTTagCompound compound = stack.getTagCompound();
-		if (compound != null && compound.hasKey("BlockEntityTag")) {
-			return compound.getCompoundTag("BlockEntityTag");
+	private NbtCompound getCompoundOrNull(final ItemStack stack) {
+		final NbtCompound compound = stack.getNbt();
+		if (compound != null && compound.contains("BlockEntityTag")) {
+			return compound.getCompound("BlockEntityTag");
 		} else {
 			return null;
 		}

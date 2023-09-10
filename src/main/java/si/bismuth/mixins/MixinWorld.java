@@ -1,13 +1,13 @@
 package si.bismuth.mixins;
 
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldProvider;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.storage.ISaveHandler;
-import net.minecraft.world.storage.WorldInfo;
+import net.minecraft.world.WorldData;
+import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.dimension.Dimension;
+import net.minecraft.world.storage.WorldStorage;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -28,81 +28,69 @@ import java.util.Set;
 public abstract class MixinWorld {
 	// @formatter:off
 	private String worldName;
-	private Iterator<TileEntity> myIterator;
-	@Shadow @Final public WorldProvider provider;
-	@Shadow @Final public List<TileEntity> loadedTileEntityList;
-	@Shadow @Final public List<TileEntity> tickableTileEntities;
-	@Shadow @Final private List<TileEntity> tileEntitiesToBeRemoved;
-	@Shadow public abstract Chunk getChunk(BlockPos pos);
-	@Shadow public abstract boolean isBlockLoaded(BlockPos pos);
+	@Shadow @Final public Dimension dimension;
+	@Shadow @Final public List<BlockEntity> blockEntities;
+	@Shadow @Final public List<BlockEntity> tickingBlockEntities;
+	@Shadow @Final private List<BlockEntity> removedBlockEntities;
+	@Shadow public abstract WorldChunk getChunk(BlockPos pos);
+	@Shadow public abstract boolean isChunkLoaded(BlockPos pos);
 	// @formatter:on
 
 	@Inject(method = "<init>", at = @At("RETURN"))
-	private void setWorldName(ISaveHandler saveHandlerIn, WorldInfo info, WorldProvider providerIn, net.minecraft.profiler.Profiler profilerIn, boolean client, CallbackInfo ci) {
-		this.worldName = this.provider.getDimensionType().getName();
+	private void setWorldName(WorldStorage saveHandlerIn, WorldData info, Dimension providerIn, net.minecraft.util.profiler.Profiler profilerIn, boolean client, CallbackInfo ci) {
+		this.worldName = this.dimension.getType().getKey();
 	}
 
-	@Redirect(method = "updateEntities", at = @At(value = "INVOKE", target = "Ljava/util/List;isEmpty()Z", ordinal = 0, remap = false))
-	private boolean fasterTEremoval(List<TileEntity> list) {
-		if (!this.tileEntitiesToBeRemoved.isEmpty()) {
-			final Set<TileEntity> remove = Collections.newSetFromMap(new IdentityHashMap<>());
-			remove.addAll(this.tileEntitiesToBeRemoved);
-			this.tickableTileEntities.removeAll(remove);
-			this.loadedTileEntityList.removeAll(remove);
-			this.tileEntitiesToBeRemoved.clear();
+	@Redirect(method = "tickEntities", at = @At(value = "INVOKE", target = "Ljava/util/List;isEmpty()Z", ordinal = 0, remap = false))
+	private boolean fasterTEremoval(List<BlockEntity> list) {
+		if (!this.removedBlockEntities.isEmpty()) {
+			final Set<BlockEntity> remove = Collections.newSetFromMap(new IdentityHashMap<>());
+			remove.addAll(this.removedBlockEntities);
+			this.tickingBlockEntities.removeAll(remove);
+			this.blockEntities.removeAll(remove);
+			this.removedBlockEntities.clear();
 		}
 
 		return true;
 	}
 
-	@Inject(method = "updateEntities", at = @At(value = "INVOKE_STRING", target = "Lnet/minecraft/profiler/Profiler;endStartSection(Ljava/lang/String;)V", args = "ldc=remove"))
+	@Inject(method = "tickEntities", at = @At(value = "INVOKE_STRING", target = "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V", args = "ldc=remove"))
 	private void onRemoveEntities(CallbackInfo ci) {
 		Profiler.start_section(this.worldName, "entities");
 	}
 
-	@Inject(method = "updateEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;getRidingEntity()Lnet/minecraft/entity/Entity;"), locals = LocalCapture.CAPTURE_FAILHARD)
+	@Inject(method = "tickEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;getMount()Lnet/minecraft/entity/Entity;"), locals = LocalCapture.CAPTURE_FAILHARD)
 	private void onGetRidingEntity(CallbackInfo ci, int i, Entity entity) {
 		Profiler.start_entity_section(this.worldName, entity);
 	}
 
-	@Inject(method = "updateEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/profiler/Profiler;endSection()V", ordinal = 1))
+	@Inject(method = "tickEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiler/Profiler;pop()V", ordinal = 1))
 	private void postUpdateEntities(CallbackInfo ci) {
 		Profiler.end_current_entity_section();
 	}
 
-	@Inject(method = "updateEntities", at = @At(value = "INVOKE_STRING", target = "Lnet/minecraft/profiler/Profiler;endStartSection(Ljava/lang/String;)V", args = "ldc=blockEntities"))
+	@Inject(method = "tickEntities", at = @At(value = "INVOKE_STRING", target = "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V", args = "ldc=blockEntities"))
 	private void onStartBlockEntities(CallbackInfo ci) {
 		Profiler.end_current_section();
 		Profiler.start_section(this.worldName, "tileentities");
 	}
 
-	@Inject(method = "updateEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/tileentity/TileEntity;isInvalid()Z", ordinal = 0), locals = LocalCapture.CAPTURE_FAILHARD)
-	private void keepACopy(CallbackInfo ci, Iterator<TileEntity> iterator, TileEntity entity) {
-		this.myIterator = iterator;
+	@Inject(method = "tickEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/entity/BlockEntity;isRemoved()Z", ordinal = 0), locals = LocalCapture.CAPTURE_FAILHARD)
+	private void startBlockEntity(CallbackInfo ci, Iterator<BlockEntity> iterator, BlockEntity entity) {
 		Profiler.start_entity_section(this.worldName, entity);
 	}
 
-	@Redirect(method = "updateEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/tileentity/TileEntity;isInvalid()Z", ordinal = 1))
-	private boolean onRemoveBlockEntity(TileEntity tileEntity) {
-		if (tileEntity.isInvalid()) {
-			this.myIterator.remove();
-			this.loadedTileEntityList.remove(tileEntity);
-
-			if (this.isBlockLoaded(tileEntity.getPos())) {
-				this.getChunk(tileEntity.getPos()).removeTileEntity(tileEntity.getPos());
-			}
-		}
-
+	@Inject(method = "tickEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/entity/BlockEntity;isRemoved()Z", ordinal = 1))
+	private void endBlockEntity(CallbackInfo ci) {
 		Profiler.end_current_entity_section();
-		return false;
 	}
 
-	@Inject(method = "updateEntities", at = @At("RETURN"))
+	@Inject(method = "tickEntities", at = @At("RETURN"))
 	private void onEndUpdateEntities(CallbackInfo ci) {
 		Profiler.end_current_section();
 	}
 
-	@Redirect(method = "updateEntityWithOptionalForce", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;setPositionNonDirty()Z"))
+	@Redirect(method = "tickEntity(Lnet/minecraft/entity/Entity;Z)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;m_8699128()Z"))
 	private boolean alwaysLoadChunk(Entity entity) {
 		return true;
 	}

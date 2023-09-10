@@ -20,7 +20,7 @@ public abstract class MixinMinecraftServer {
 		MCServer.init((MinecraftServer) (Object) this);
 	}
 
-	@Inject(method = "loadAllWorlds", at = @At("HEAD"))
+	@Inject(method = "loadWorld", at = @At("HEAD"))
 	private void onLoadAllWorlds(CallbackInfo ci) throws LoginException, InterruptedException {
 		MCServer.onServerLoaded((MinecraftServer) (Object) this);
 	}
@@ -30,7 +30,7 @@ public abstract class MixinMinecraftServer {
 		// noop
 	}
 
-	@Inject(method = "tick", at = @At(value = "FIELD", ordinal = 0, shift = At.Shift.AFTER, target = "Lnet/minecraft/server/MinecraftServer;tickCounter:I"))
+	@Inject(method = "tick", at = @At(value = "FIELD", ordinal = 0, shift = At.Shift.AFTER, target = "Lnet/minecraft/server/MinecraftServer;ticks:I"))
 	private void onTick(CallbackInfo ci) {
 		MCServer.tick((MinecraftServer) (Object) this);
 
@@ -39,12 +39,12 @@ public abstract class MixinMinecraftServer {
 		}
 	}
 
-	@Inject(method = "tick", at = @At(value = "INVOKE_STRING", target = "Lnet/minecraft/profiler/Profiler;startSection(Ljava/lang/String;)V", args = "ldc=save"))
+	@Inject(method = "tick", at = @At(value = "INVOKE_STRING", target = "Lnet/minecraft/util/profiler/Profiler;push(Ljava/lang/String;)V", args = "ldc=save"))
 	private void onAutoSave(CallbackInfo ci) {
 		Profiler.start_section(null, "autosave");
 	}
 
-	@Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/profiler/Profiler;endSection()V", ordinal = 0))
+	@Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiler/Profiler;pop()V", ordinal = 0))
 	private void postAutoSave(CallbackInfo ci) {
 		Profiler.end_current_section();
 	}
@@ -56,12 +56,12 @@ public abstract class MixinMinecraftServer {
 		}
 	}
 
-	@Inject(method = "updateTimeLightAndEntities", at = @At(value = "INVOKE_STRING", target = "Lnet/minecraft/profiler/Profiler;endStartSection(Ljava/lang/String;)V", args = "ldc=connection"))
+	@Inject(method = "tickWorlds", at = @At(value = "INVOKE_STRING", target = "Lnet/minecraft/profiler/Profiler;endStartSection(Ljava/lang/String;)V", args = "ldc=connection"))
 	private void preNetworkTick(CallbackInfo ci) {
 		Profiler.start_section(null, "network");
 	}
 
-	@Inject(method = "updateTimeLightAndEntities", at = @At(value = "INVOKE_STRING", target = "Lnet/minecraft/profiler/Profiler;endStartSection(Ljava/lang/String;)V", args = "ldc=commandFunctions"))
+	@Inject(method = "tickWorlds", at = @At(value = "INVOKE_STRING", target = "Lnet/minecraft/profiler/Profiler;endStartSection(Ljava/lang/String;)V", args = "ldc=commandFunctions"))
 	private void postNetworkTick(CallbackInfo ci) {
 		Profiler.end_current_section();
 	}

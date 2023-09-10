@@ -1,15 +1,15 @@
 package si.bismuth.mixins;
 
-import net.minecraft.block.BlockPumpkin;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.PumpkinBlock;
+import net.minecraft.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(BlockPumpkin.class)
+@Mixin(PumpkinBlock.class)
 public abstract class MixinBlockPumpkin {
-	@Redirect(method = "canPlaceBlockAt", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/state/IBlockState;isTopSolid()Z"))
-	private boolean onPlaceFenceGate(IBlockState state) {
+	@Redirect(method = "canSurvive", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/state/BlockState;isFullBlock()Z"))
+	private boolean onPlaceFenceGate(BlockState state) {
 		return true;
 	}
 }
