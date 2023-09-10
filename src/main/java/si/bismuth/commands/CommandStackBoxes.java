@@ -12,7 +12,7 @@ import net.minecraft.server.command.source.CommandSource;
 import net.minecraft.server.entity.living.player.ServerPlayerEntity;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import si.bismuth.mixins.IBlockShulkerBox;
+import si.bismuth.mixins.IShulkerBoxBlock;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -60,7 +60,7 @@ public class CommandStackBoxes extends CommandBismuthBase {
 		if (stack.getItem() instanceof ShulkerBoxItem) {
 			NbtCompound cmp = this.getCompoundOrNull(stack);
 			if (cmp == null || cmp.getList("Items", 10).isEmpty()) {
-				final DyeColor dye = ((IBlockShulkerBox) ((ShulkerBoxItem) stack.getItem()).getBlock()).getColor();
+				final DyeColor dye = ((IShulkerBoxBlock) ((ShulkerBoxItem) stack.getItem()).getBlock()).getColor();
 				return new ImmutablePair<>(dye, stack.getSize());
 			}
 		}

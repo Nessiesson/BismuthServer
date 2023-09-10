@@ -10,7 +10,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Pair;
 import net.minecraft.util.math.MathHelper;
 import si.bismuth.logging.LoggerRegistry;
-import si.bismuth.mixins.ISPacketPlayerListHeaderFooter;
+import si.bismuth.mixins.ITabListS2CPacket;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,8 +33,8 @@ public class HUDController {
 
 	public static void clear_player(PlayerEntity player) {
 		TabListS2CPacket packet = new TabListS2CPacket();
-		((ISPacketPlayerListHeaderFooter) packet).setHeader(new LiteralText(""));
-		((ISPacketPlayerListHeaderFooter) packet).setFooter(new LiteralText(""));
+		((ITabListS2CPacket) packet).setHeader(new LiteralText(""));
+		((ITabListS2CPacket) packet).setFooter(new LiteralText(""));
 		((ServerPlayerEntity) player).networkHandler.sendPacket(packet);
 	}
 
@@ -53,8 +53,8 @@ public class HUDController {
 
 		for (PlayerEntity player : player_huds.keySet()) {
 			TabListS2CPacket packet = new TabListS2CPacket();
-			((ISPacketPlayerListHeaderFooter) packet).setHeader(new LiteralText(""));
-			((ISPacketPlayerListHeaderFooter) packet).setFooter(Messenger.m(null, player_huds.get(player).toArray(new Object[0])));
+			((ITabListS2CPacket) packet).setHeader(new LiteralText(""));
+			((ITabListS2CPacket) packet).setFooter(Messenger.m(null, player_huds.get(player).toArray(new Object[0])));
 			((ServerPlayerEntity) player).networkHandler.sendPacket(packet);
 		}
 	}
