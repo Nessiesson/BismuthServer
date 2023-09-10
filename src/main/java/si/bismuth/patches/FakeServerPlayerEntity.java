@@ -1,6 +1,5 @@
 package si.bismuth.patches;
 
-import com.google.common.collect.Lists;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.entity.SkullBlockEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -15,11 +14,13 @@ import net.minecraft.server.ServerPlayerInteractionManager;
 import net.minecraft.server.entity.living.player.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.GameMode;
+
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
 @SuppressWarnings("EntityConstructor")
-public class EntityPlayerMPFake extends ServerPlayerEntity {
+public class FakeServerPlayerEntity extends ServerPlayerEntity {
 	private double lastReportedPosX;
 	private double lastReportedPosY;
 	private double lastReportedPosZ;
@@ -32,8 +33,8 @@ public class EntityPlayerMPFake extends ServerPlayerEntity {
 
 	private final Scoreboard scoreboard = new FakeScoreboard();
 
-	private EntityPlayerMPFake(MinecraftServer server, ServerWorld worldIn, GameProfile profile, ServerPlayerInteractionManager interactionManagerIn) {
-		super(server, worldIn, profile, interactionManagerIn);
+	private FakeServerPlayerEntity(MinecraftServer server, ServerWorld world, GameProfile profile, ServerPlayerInteractionManager interactionManager) {
+		super(server, world, profile, interactionManager);
 	}
 
 	public static void createFake(String username, MinecraftServer server, double x, double y, double z, double yaw, double pitch, int dimension, int gamemode) {
@@ -46,9 +47,9 @@ public class EntityPlayerMPFake extends ServerPlayerEntity {
 		}
 
 		gameprofile = fixSkin(gameprofile);
-		EntityPlayerMPFake instance = new EntityPlayerMPFake(server, worldIn, gameprofile, interactionManagerIn);
+		FakeServerPlayerEntity instance = new FakeServerPlayerEntity(server, worldIn, gameprofile, interactionManagerIn);
 		instance.setSetPosition(x, y, z, (float) yaw, (float) pitch);
-		server.getPlayerManager().onLogin(new NetworkManagerFake(), instance);
+		server.getPlayerManager().onLogin(new FakeConnection(), instance);
 		if (instance.dimensionId != dimension) //player was logged in in a different dimension
 		{
 			ServerWorld old_world = server.getWorld(instance.dimensionId);
@@ -71,11 +72,11 @@ public class EntityPlayerMPFake extends ServerPlayerEntity {
 		instance.dataTracker.set(VIEW_DISTANCE, (byte) 0x7f); // show all model layers (incl. capes)
 	}
 
-	private static GameProfile fixSkin(GameProfile gameProfile) {
-		if (!gameProfile.getProperties().containsKey("texture"))
-			return SkullBlockEntity.updateProfile(gameProfile);
+	private static GameProfile fixSkin(GameProfile profile) {
+		if (!profile.getProperties().containsKey("texture"))
+			return SkullBlockEntity.updateProfile(profile);
 		else
-			return gameProfile;
+			return profile;
 	}
 
 	@Override
@@ -130,7 +131,7 @@ public class EntityPlayerMPFake extends ServerPlayerEntity {
 	private class FakeScoreboard extends Scoreboard {
 		@Override
 		public Collection<ScoreboardObjective> getObjectives(ScoreboardCriterion criteria) {
-			return Lists.newArrayList();
+			return new ArrayList<>();
 		}
 	}
 }

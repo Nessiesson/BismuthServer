@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(XpOrbEntity.class)
-public abstract class XpOrbEntityMixin extends Entity implements si.bismuth.utils.IEntityXPOrb {
+public abstract class XpOrbEntityMixin extends Entity implements si.bismuth.utils.IXpOrbEntity {
 	@Unique
 	private static final double LIFETIME_CONSTANT = 1D / Math.log(16D);
 	@Unique
@@ -110,7 +110,7 @@ public abstract class XpOrbEntityMixin extends Entity implements si.bismuth.util
 		}
 
 		if (orb.isAlive()) {
-			final si.bismuth.utils.IEntityXPOrb iorb = ((si.bismuth.utils.IEntityXPOrb) orb);
+			final si.bismuth.utils.IXpOrbEntity iorb = ((si.bismuth.utils.IXpOrbEntity) orb);
 			this.xp += orb.getXp();
 			this.xpValues.addAll(iorb.getXpValues());
 			orb.remove();

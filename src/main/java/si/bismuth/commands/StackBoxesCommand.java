@@ -17,7 +17,7 @@ import si.bismuth.mixins.IShulkerBoxBlock;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CommandStackBoxes extends CommandBismuthBase {
+public class StackBoxesCommand extends CommandBismuthBase {
 	@Override
 	public String getName() {
 		return "stackboxes";

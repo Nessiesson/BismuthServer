@@ -15,8 +15,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import si.bismuth.MCServer;
-import si.bismuth.patches.EntityPlayerMPFake;
-import si.bismuth.patches.NetHandlerPlayServerFake;
+import si.bismuth.patches.FakeServerPlayerEntity;
+import si.bismuth.patches.FakeServerPlayNetworkHandler;
 import si.bismuth.utils.ScoreboardHelper;
 
 import java.util.Arrays;
@@ -38,14 +38,14 @@ public class PlayerManagerMixin {
 
 	@Inject(method = "onLogin", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/server/PlayerManager;load(Lnet/minecraft/server/entity/living/player/ServerPlayerEntity;)Lnet/minecraft/nbt/NbtCompound;"))
 	private void onInitializeConnectionToPlayer(Connection manager, ServerPlayerEntity player, CallbackInfo ci) {
-		if (player instanceof EntityPlayerMPFake) {
-			((EntityPlayerMPFake) player).resetToSetPosition();
+		if (player instanceof FakeServerPlayerEntity) {
+			((FakeServerPlayerEntity) player).resetToSetPosition();
 		}
 	}
 
 	@Redirect(method = "onLogin", at = @At(value = "NEW", target = "net/minecraft/network/NetHandlerPlayServer"))
 	private ServerPlayNetworkHandler replaceNetHandler(MinecraftServer server, Connection manager, ServerPlayerEntity player) {
-		return player instanceof EntityPlayerMPFake ? new NetHandlerPlayServerFake(server, manager, player) : new ServerPlayNetworkHandler(server, manager, player);
+		return player instanceof FakeServerPlayerEntity ? new FakeServerPlayNetworkHandler(server, manager, player) : new ServerPlayNetworkHandler(server, manager, player);
 	}
 
 	@Redirect(method = "createForLogin", at = @At(value = "FIELD", target = "Lnet/minecraft/entity/player/EntityPlayerMP;connection:Lnet/minecraft/network/NetHandlerPlayServer;"))
@@ -56,7 +56,7 @@ public class PlayerManagerMixin {
 
 	@Redirect(method = "createForLogin", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/NetHandlerPlayServer;disconnect(Lnet/minecraft/util/text/ITextComponent;)V"))
 	private void handleFakePlayerJoin(ServerPlayNetworkHandler handler, Text component) {
-		if (this.mycopy instanceof EntityPlayerMPFake) {
+		if (this.mycopy instanceof FakeServerPlayerEntity) {
 			this.mycopy.discard();
 		} else {
 			this.mycopy.networkHandler.sendDisconnect(new TranslatableText("multiplayer.disconnect.duplicate_login"));
@@ -84,7 +84,7 @@ public class PlayerManagerMixin {
 
 	@Inject(method = "save", at = @At("HEAD"), cancellable = true)
 	private void checkFakePlayer(ServerPlayerEntity player, CallbackInfo ci){
-		if (player instanceof EntityPlayerMPFake){
+		if (player instanceof FakeServerPlayerEntity){
 			ci.cancel();
 		}
 	}

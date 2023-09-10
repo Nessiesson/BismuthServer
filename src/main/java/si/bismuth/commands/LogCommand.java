@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 @SuppressWarnings("NoTranslation")
-public class CommandLog extends CommandBismuthBase {
+public class LogCommand extends CommandBismuthBase {
 	@Override
 	public String getName() {
 		return "log";

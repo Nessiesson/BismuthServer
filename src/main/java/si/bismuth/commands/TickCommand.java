@@ -11,7 +11,7 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-public class CommandTick extends CommandBismuthBase {
+public class TickCommand extends CommandBismuthBase {
 	/**
 	 * Gets the name of the command
 	 */

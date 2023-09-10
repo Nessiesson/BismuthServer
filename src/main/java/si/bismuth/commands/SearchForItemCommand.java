@@ -16,7 +16,7 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-public class CommandSearchForItem extends CommandBismuthBase {
+public class SearchForItemCommand extends CommandBismuthBase {
 	@Override
 	public String getName() {
 		return "searchforitem";

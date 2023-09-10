@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
-import si.bismuth.movablete.ITileEntityPiston;
+import si.bismuth.movablete.IMovingBlockEntity;
 
 import java.util.List;
 
@@ -54,7 +54,7 @@ public class PistonBaseBlockMixin {
 	private void setTileEntityTE(World world, BlockPos p, Direction d, boolean ex, CallbackInfoReturnable<Boolean> cir, PistonMoveStructureResolver bpsh, List<BlockPos> list, List<BlockState> lbs, List<BlockPos> lbp, int i, BlockState[] abs, Direction enumfacing, int l, BlockPos pos) {
 		final BlockEntity te = world.getBlockEntity(pos);
 		if (te instanceof MovingBlockEntity) {
-			((ITileEntityPiston) te).setCarriedTileEntity(this.tileEntitiesList.get(l));
+			((IMovingBlockEntity) te).setCarriedBlockEntity(this.tileEntitiesList.get(l));
 		}
 	}
 }

@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-public class CommandPing extends CommandBismuthBase {
+public class PingCommand extends CommandBismuthBase {
 	@Override
 	public String getName() {
 		return "ping";

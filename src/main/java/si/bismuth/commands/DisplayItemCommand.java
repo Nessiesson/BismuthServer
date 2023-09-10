@@ -8,7 +8,7 @@ import net.minecraft.server.entity.living.player.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
-public class CommandDisplayItem extends CommandBismuthBase {
+public class DisplayItemCommand extends CommandBismuthBase {
 	@Override
 	public String getName() {
 		return "displayitem";

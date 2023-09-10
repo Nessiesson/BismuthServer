@@ -5,7 +5,7 @@ import net.minecraft.server.command.AbstractCommand;
 import net.minecraft.server.command.source.CommandSource;
 import net.minecraft.text.LiteralText;
 
-public class CommandAllowGateway extends AbstractCommand {
+public class AllowGatewayCommand extends AbstractCommand {
 	public static boolean canEnterPortal = false;
 
 	@Override

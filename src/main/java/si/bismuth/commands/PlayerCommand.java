@@ -1,6 +1,6 @@
 package si.bismuth.commands;
 
-import si.bismuth.patches.EntityPlayerMPFake;
+import si.bismuth.patches.FakeServerPlayerEntity;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.exception.CommandException;
@@ -18,7 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class CommandPlayer extends CommandBismuthBase {
+public class PlayerCommand extends CommandBismuthBase {
 	public String getName() {
 		return "player";
 	}
@@ -37,7 +37,7 @@ public class CommandPlayer extends CommandBismuthBase {
 		if (sender instanceof PlayerEntity) {
 			PlayerEntity sendingPlayer = asPlayer(sender);
 			if (!(server.getPlayerManager().isOp(sendingPlayer.getGameProfile()))) {
-				if (!(sendingPlayer == player || player == null || player instanceof EntityPlayerMPFake)) {
+				if (!(sendingPlayer == player || player == null || player instanceof FakeServerPlayerEntity)) {
 					throw new IncorrectUsageException("Non OP players can't control other players");
 				}
 			}
@@ -86,11 +86,11 @@ public class CommandPlayer extends CommandBismuthBase {
 					dimension = 1;
 				}
 			}
-			EntityPlayerMPFake.createFake(playerName, server, d0, d1, d2, yaw, pitch, dimension, 3);
+			FakeServerPlayerEntity.createFake(playerName, server, d0, d1, d2, yaw, pitch, dimension, 3);
 			return;
 		}
 		if ("kill".equalsIgnoreCase(action)) {
-			if (!(player instanceof EntityPlayerMPFake)) {
+			if (!(player instanceof FakeServerPlayerEntity)) {
 				throw new IncorrectUsageException("use /kill or /kick on regular players");
 			}
 			player.discard();

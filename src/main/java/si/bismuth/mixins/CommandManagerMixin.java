@@ -13,27 +13,27 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 import si.bismuth.MCServer;
-import si.bismuth.commands.CommandAllowGateway;
-import si.bismuth.commands.CommandDisplayItem;
-import si.bismuth.commands.CommandLog;
-import si.bismuth.commands.CommandPing;
-import si.bismuth.commands.CommandPlayer;
-import si.bismuth.commands.CommandSearchForItem;
-import si.bismuth.commands.CommandStackBoxes;
-import si.bismuth.commands.CommandTick;
+import si.bismuth.commands.AllowGatewayCommand;
+import si.bismuth.commands.DisplayItemCommand;
+import si.bismuth.commands.LogCommand;
+import si.bismuth.commands.PingCommand;
+import si.bismuth.commands.PlayerCommand;
+import si.bismuth.commands.SearchForItemCommand;
+import si.bismuth.commands.StackBoxesCommand;
+import si.bismuth.commands.TickCommand;
 
 @Mixin(CommandManager.class)
 public abstract class CommandManagerMixin extends CommandRegistry implements CommandListener {
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void onCtor(MinecraftServer server, CallbackInfo ci) {
-		this.register(new CommandAllowGateway());
-		this.register(new CommandLog());
-		this.register(new CommandDisplayItem());
-		this.register(new CommandPing());
-		this.register(new CommandPlayer());
-		this.register(new CommandSearchForItem());
-		this.register(new CommandStackBoxes());
-		this.register(new CommandTick());
+		this.register(new AllowGatewayCommand());
+		this.register(new LogCommand());
+		this.register(new DisplayItemCommand());
+		this.register(new PingCommand());
+		this.register(new PlayerCommand());
+		this.register(new SearchForItemCommand());
+		this.register(new StackBoxesCommand());
+		this.register(new TickCommand());
 	}
 
 	@Inject(method = "sendSuccess", at = @At("HEAD"), cancellable = true)
