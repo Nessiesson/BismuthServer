@@ -1,10 +1,10 @@
 package si.bismuth.mixins;
 
-import net.minecraft.crafting.recipe.CraftingRecipe;
-import net.minecraft.crafting.recipe.RecipeManager;
+import net.minecraft.crafting.recipe.Recipe;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.inventory.ResultInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.crafting.RecipePlacementHelper;
 import net.minecraft.server.entity.living.player.ServerPlayerEntity;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -14,16 +14,16 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import si.bismuth.utils.IRecipeBookItemDuper;
 
-@Mixin(RecipeManager.class)
-public class RecipeManagerMixin {
+@Mixin(RecipePlacementHelper.class)
+public class RecipePlacementHelperMixin {
 	@Shadow
 	private ResultInventory resultInventory;
 
 	@Shadow
 	private CraftingInventory craftingInventory;
 
-	@Inject(method = "clickRecipe", at = @At(value = "INVOKE", target = "Lnet/minecraft/crafting/recipe/RecipeManager;takeBackInputs()V", shift = At.Shift.AFTER))
-	private void dupingBug(ServerPlayerEntity player, CraftingRecipe recipe, boolean hasShiftDown, CallbackInfo ci) {
+	@Inject(method = "clickRecipe", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/crafting/RecipePlacementHelper;takeBackIngredients()V", shift = At.Shift.AFTER))
+	private void dupingBug(ServerPlayerEntity player, Recipe recipe, boolean hasShiftDown, CallbackInfo ci) {
 		this.craftingWindowDupingBugAddedBack(player);
 	}
 

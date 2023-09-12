@@ -2,8 +2,8 @@ package si.bismuth;
 
 import com.google.common.collect.Lists;
 import net.minecraft.crafting.CraftingManager;
-import net.minecraft.crafting.recipe.CraftingRecipe;
 import net.minecraft.crafting.recipe.Ingredient;
+import net.minecraft.crafting.recipe.Recipe;
 import net.minecraft.crafting.recipe.ShapelessRecipe;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -30,9 +30,9 @@ public class MCServer {
 	public static DCBot bot;
 	private static final Ingredient PAPER = Ingredient.of(Items.PAPER);
 	private static final Ingredient SULPHUR = Ingredient.of(Items.GUNPOWDER);
-	private static final CraftingRecipe duration1 = new ShapelessRecipe("rocket", makeFirework(1), DefaultedList.of(Ingredient.EMPTY, PAPER, SULPHUR));
-	private static final CraftingRecipe duration2 = new ShapelessRecipe("rocket", makeFirework(2), DefaultedList.of(Ingredient.EMPTY, PAPER, SULPHUR, SULPHUR));
-	private static final CraftingRecipe duration3 = new ShapelessRecipe("rocket", makeFirework(3), DefaultedList.of(Ingredient.EMPTY, PAPER, SULPHUR, SULPHUR, SULPHUR));
+	private static final Recipe duration1 = new ShapelessRecipe("rocket", makeFirework(1), DefaultedList.of(Ingredient.EMPTY, PAPER, SULPHUR));
+	private static final Recipe duration2 = new ShapelessRecipe("rocket", makeFirework(2), DefaultedList.of(Ingredient.EMPTY, PAPER, SULPHUR, SULPHUR));
+	private static final Recipe duration3 = new ShapelessRecipe("rocket", makeFirework(3), DefaultedList.of(Ingredient.EMPTY, PAPER, SULPHUR, SULPHUR, SULPHUR));
 
 	static {
 		CraftingManager.register("bismuth:durationone", duration1);
@@ -82,6 +82,6 @@ public class MCServer {
 	}
 
 	private static void unlockCustomRecipes(ServerPlayerEntity player) {
-		player.m_5474670(Lists.newArrayList(duration1, duration2, duration3));
+		player.unlockRecipes(Lists.newArrayList(duration1, duration2, duration3));
 	}
 }

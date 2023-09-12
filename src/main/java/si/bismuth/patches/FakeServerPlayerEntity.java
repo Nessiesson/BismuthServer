@@ -69,7 +69,7 @@ public class FakeServerPlayerEntity extends ServerPlayerEntity {
 		server.getPlayerManager().sendPacket(new EntityHeadAnglesS2CPacket(instance, (byte) (instance.headYaw * 256 / 360)), instance.dimensionId);
 		server.getPlayerManager().sendPacket(new EntityTeleportS2CPacket(instance), instance.dimensionId);
 		server.getPlayerManager().move(instance);
-		instance.dataTracker.set(VIEW_DISTANCE, (byte) 0x7f); // show all model layers (incl. capes)
+		instance.dataTracker.set(MODEL_PARTS, (byte) 0x7f); // show all model layers (incl. capes)
 	}
 
 	private static GameProfile fixSkin(GameProfile profile) {
