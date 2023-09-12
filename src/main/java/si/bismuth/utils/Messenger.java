@@ -1,14 +1,14 @@
 package si.bismuth.utils;
 
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.EnumCreatureType;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.living.mob.MobCategory;
+import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.event.ClickEvent;
-import net.minecraft.util.text.event.HoverEvent;
+import net.minecraft.server.command.source.CommandSource;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.Formatting;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 
 public class Messenger {
     /*
@@ -40,46 +40,46 @@ public class Messenger {
      / = action added to the previous component
      */
 
-	private static ITextComponent _applyStyleToTextComponent(ITextComponent comp, String style) {
+	private static Text _applyStyleToTextComponent(Text comp, String style) {
 		//could be rewritten to be more efficient
 		comp.getStyle().setItalic(style.indexOf('i') >= 0);
 		comp.getStyle().setStrikethrough(style.indexOf('s') >= 0);
 		comp.getStyle().setUnderlined(style.indexOf('u') >= 0);
 		comp.getStyle().setBold(style.indexOf('b') >= 0);
 		comp.getStyle().setObfuscated(style.indexOf('o') >= 0);
-		comp.getStyle().setColor(TextFormatting.WHITE);
+		comp.getStyle().setColor(Formatting.WHITE);
 		if (style.indexOf('w') >= 0)
-			comp.getStyle().setColor(TextFormatting.WHITE); // not needed
+			comp.getStyle().setColor(Formatting.WHITE); // not needed
 		if (style.indexOf('y') >= 0)
-			comp.getStyle().setColor(TextFormatting.YELLOW);
+			comp.getStyle().setColor(Formatting.YELLOW);
 		if (style.indexOf('m') >= 0)
-			comp.getStyle().setColor(TextFormatting.LIGHT_PURPLE);
+			comp.getStyle().setColor(Formatting.LIGHT_PURPLE);
 		if (style.indexOf('r') >= 0)
-			comp.getStyle().setColor(TextFormatting.RED);
+			comp.getStyle().setColor(Formatting.RED);
 		if (style.indexOf('c') >= 0)
-			comp.getStyle().setColor(TextFormatting.AQUA);
+			comp.getStyle().setColor(Formatting.AQUA);
 		if (style.indexOf('l') >= 0)
-			comp.getStyle().setColor(TextFormatting.GREEN);
+			comp.getStyle().setColor(Formatting.GREEN);
 		if (style.indexOf('t') >= 0)
-			comp.getStyle().setColor(TextFormatting.BLUE);
+			comp.getStyle().setColor(Formatting.BLUE);
 		if (style.indexOf('f') >= 0)
-			comp.getStyle().setColor(TextFormatting.DARK_GRAY);
+			comp.getStyle().setColor(Formatting.DARK_GRAY);
 		if (style.indexOf('g') >= 0)
-			comp.getStyle().setColor(TextFormatting.GRAY);
+			comp.getStyle().setColor(Formatting.GRAY);
 		if (style.indexOf('d') >= 0)
-			comp.getStyle().setColor(TextFormatting.GOLD);
+			comp.getStyle().setColor(Formatting.GOLD);
 		if (style.indexOf('p') >= 0)
-			comp.getStyle().setColor(TextFormatting.DARK_PURPLE);
+			comp.getStyle().setColor(Formatting.DARK_PURPLE);
 		if (style.indexOf('n') >= 0)
-			comp.getStyle().setColor(TextFormatting.DARK_RED);
+			comp.getStyle().setColor(Formatting.DARK_RED);
 		if (style.indexOf('q') >= 0)
-			comp.getStyle().setColor(TextFormatting.DARK_AQUA);
+			comp.getStyle().setColor(Formatting.DARK_AQUA);
 		if (style.indexOf('e') >= 0)
-			comp.getStyle().setColor(TextFormatting.DARK_GREEN);
+			comp.getStyle().setColor(Formatting.DARK_GREEN);
 		if (style.indexOf('v') >= 0)
-			comp.getStyle().setColor(TextFormatting.DARK_BLUE);
+			comp.getStyle().setColor(Formatting.DARK_BLUE);
 		if (style.indexOf('k') >= 0)
-			comp.getStyle().setColor(TextFormatting.BLACK);
+			comp.getStyle().setColor(Formatting.BLACK);
 		return comp;
 	}
 
@@ -94,7 +94,7 @@ public class Messenger {
 		return color;
 	}
 
-	static String creatureTypeColor(EnumCreatureType type) {
+	static String creatureTypeColor(MobCategory type) {
 		switch (type) {
 			case MONSTER:
 				return "n";
@@ -108,7 +108,7 @@ public class Messenger {
 		return "w";
 	}
 
-	private static ITextComponent _getChatComponentFromDesc(String message, ITextComponent previous_message) {
+	private static Text _getChatComponentFromDesc(String message, Text previous_message) {
 		String[] parts = message.split("\\s", 2);
 		String desc = parts[0];
 		String str = "";
@@ -135,26 +135,26 @@ public class Messenger {
 				previous_message.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Messenger.m(null, message.substring(1))));
 			return previous_message;
 		}
-		ITextComponent txt = new TextComponentString(str);
+		Text txt = new LiteralText(str);
 		return _applyStyleToTextComponent(txt, desc);
 	}
 
 	/*
 	builds single line, multicomponent message, optionally returns it to sender, and returns as one chat messagge
 	 */
-	public static ITextComponent m(ICommandSender receiver, Object... fields) {
-		ITextComponent message = new TextComponentString("");
-		ITextComponent previous_component = null;
+	public static Text m(CommandSource receiver, Object... fields) {
+		Text message = new LiteralText("");
+		Text previous_component = null;
 		for (Object o : fields) {
-			if (o instanceof ITextComponent) {
-				message.appendSibling((ITextComponent) o);
-				previous_component = (ITextComponent) o;
+			if (o instanceof Text) {
+				message.append((Text) o);
+				previous_component = (Text) o;
 				continue;
 			}
 			String txt = o.toString();
-			ITextComponent comp = _getChatComponentFromDesc(txt, previous_component);
+			Text comp = _getChatComponentFromDesc(txt, previous_component);
 			if (comp != previous_component)
-				message.appendSibling(comp);
+				message.append(comp);
 			previous_component = comp;
 		}
 		if (receiver != null)
@@ -163,9 +163,9 @@ public class Messenger {
 	}
 
 	static void print_server_message(MinecraftServer server, String message) {
-		server.sendMessage(new TextComponentString(message));
-		ITextComponent txt = m(null, "gi " + message);
-		for (EntityPlayer entityplayer : server.getPlayerList().getPlayers()) {
+		server.sendMessage(new LiteralText(message));
+		Text txt = m(null, "gi " + message);
+		for (PlayerEntity entityplayer : server.getPlayerManager().getAll()) {
 			entityplayer.sendMessage(txt);
 		}
 	}

@@ -1,1 +1,0 @@
-Graciously copied from 2No2Name's awesome movable Tile Entity (TE/BE) source code for 1.12. 🧡

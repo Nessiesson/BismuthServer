@@ -1,18 +1,18 @@
 package si.bismuth;
 
 import com.google.common.collect.Lists;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Items;
+import net.minecraft.crafting.CraftingManager;
+import net.minecraft.crafting.recipe.Ingredient;
+import net.minecraft.crafting.recipe.Recipe;
+import net.minecraft.crafting.recipe.ShapelessRecipe;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.CraftingManager;
-import net.minecraft.item.crafting.IRecipe;
-import net.minecraft.item.crafting.Ingredient;
-import net.minecraft.item.crafting.ShapelessRecipes;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
-import net.minecraft.util.NonNullList;
-import net.minecraft.world.GameType;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.util.DefaultedList;
+import net.minecraft.world.GameMode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import si.bismuth.discord.DCBot;
@@ -28,11 +28,11 @@ public class MCServer {
 	public static final PluginChannelsManager pcm = new PluginChannelsManager();
 	public static MinecraftServer server;
 	public static DCBot bot;
-	private static final Ingredient PAPER = Ingredient.fromItem(Items.PAPER);
-	private static final Ingredient SULPHUR = Ingredient.fromItem(Items.GUNPOWDER);
-	private static final IRecipe duration1 = new ShapelessRecipes("rocket", makeFirework(1), NonNullList.from(Ingredient.EMPTY, PAPER, SULPHUR));
-	private static final IRecipe duration2 = new ShapelessRecipes("rocket", makeFirework(2), NonNullList.from(Ingredient.EMPTY, PAPER, SULPHUR, SULPHUR));
-	private static final IRecipe duration3 = new ShapelessRecipes("rocket", makeFirework(3), NonNullList.from(Ingredient.EMPTY, PAPER, SULPHUR, SULPHUR, SULPHUR));
+	private static final Ingredient PAPER = Ingredient.of(Items.PAPER);
+	private static final Ingredient SULPHUR = Ingredient.of(Items.GUNPOWDER);
+	private static final Recipe duration1 = new ShapelessRecipe("rocket", makeFirework(1), DefaultedList.of(Ingredient.EMPTY, PAPER, SULPHUR));
+	private static final Recipe duration2 = new ShapelessRecipe("rocket", makeFirework(2), DefaultedList.of(Ingredient.EMPTY, PAPER, SULPHUR, SULPHUR));
+	private static final Recipe duration3 = new ShapelessRecipe("rocket", makeFirework(3), DefaultedList.of(Ingredient.EMPTY, PAPER, SULPHUR, SULPHUR, SULPHUR));
 
 	static {
 		CraftingManager.register("bismuth:durationone", duration1);
@@ -41,12 +41,12 @@ public class MCServer {
 	}
 
 	private static ItemStack makeFirework(int duration) {
-		final NBTTagCompound durationTag = new NBTTagCompound();
-		final NBTTagCompound fireworksTag = new NBTTagCompound();
-		durationTag.setByte("Flight", (byte) duration);
-		fireworksTag.setTag("Fireworks", durationTag);
+		final NbtCompound durationTag = new NbtCompound();
+		final NbtCompound fireworksTag = new NbtCompound();
+		durationTag.putByte("Flight", (byte) duration);
+		fireworksTag.put("Fireworks", durationTag);
 		final ItemStack firework = new ItemStack(Items.FIREWORKS, 3);
-		firework.setTagCompound(fireworksTag);
+		firework.setNbt(fireworksTag);
 		return firework;
 	}
 
@@ -55,21 +55,21 @@ public class MCServer {
 	}
 
 	public static void onServerLoaded(MinecraftServer server) throws LoginException, InterruptedException {
-		server.setMOTD("v" + BISMUTH_SERVER_VERSION + " \u2014 " + server.getMOTD());
+		server.setMotd("v" + BISMUTH_SERVER_VERSION + " \u2014 " + server.getServerMotd());
 		LoggerRegistry.initLoggers(server);
-		MCServer.bot = new DCBot(((DedicatedServer) server).getStringProperty("botToken", ""), server.isServerInOnlineMode());
+		MCServer.bot = new DCBot(((DedicatedServer) server).getPropertyOrDefault("botToken", ""), server.isOnlineMode());
 	}
 
 	public static void tick(MinecraftServer server) {
 		HUDController.update_hud(server);
 	}
 
-	public static void playerConnected(EntityPlayerMP player) {
-		final GameType mode = player.interactionManager.getGameType();
-		if (mode == GameType.CREATIVE) {
-			player.setGameType(GameType.SPECTATOR);
-		} else if (mode == GameType.ADVENTURE) {
-			player.setGameType(GameType.SURVIVAL);
+	public static void playerConnected(ServerPlayerEntity player) {
+		final GameMode mode = player.interactionManager.getGameMode();
+		if (mode == GameMode.CREATIVE) {
+			player.setGameMode(GameMode.SPECTATOR);
+		} else if (mode == GameMode.ADVENTURE) {
+			player.setGameMode(GameMode.SURVIVAL);
 		}
 
 		LoggerRegistry.playerConnected(player);
@@ -77,11 +77,11 @@ public class MCServer {
 		pcm.sendRegisterToPlayer(player);
 	}
 
-	public static void playerDisconnected(EntityPlayerMP player) {
+	public static void playerDisconnected(ServerPlayerEntity player) {
 		LoggerRegistry.playerDisconnected(player);
 	}
 
-	private static void unlockCustomRecipes(EntityPlayerMP player) {
+	private static void unlockCustomRecipes(ServerPlayerEntity player) {
 		player.unlockRecipes(Lists.newArrayList(duration1, duration2, duration3));
 	}
 }

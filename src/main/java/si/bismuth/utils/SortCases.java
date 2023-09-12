@@ -1,11 +1,11 @@
 package si.bismuth.utils;
 
 import net.minecraft.enchantment.Enchantment;
-import net.minecraft.item.ItemEnchantedBook;
+import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemTool;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.item.ToolItem;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -19,15 +19,15 @@ public class SortCases {
 	}
 
 	private static String specialCases(ItemStack stack) {
-		if (stack.getCount() != stack.getMaxStackSize()) {
+		if (stack.getSize() != stack.getMaxSize()) {
 			return stackSize(stack);
 		}
 
-		if (stack.getItem() instanceof ItemEnchantedBook) {
+		if (stack.getItem() instanceof EnchantedBookItem) {
 			return enchantedBookNameCase(stack);
 		}
 
-		if (stack.getItem() instanceof ItemTool) {
+		if (stack.getItem() instanceof ToolItem) {
 			return toolDuribilityCase(stack);
 		}
 
@@ -35,26 +35,26 @@ public class SortCases {
 	}
 
 	private static String stackSize(ItemStack stack) {
-		return stack.getItem().toString() + stack.getCount();
+		return stack.getItem().toString() + stack.getSize();
 	}
 
 	private static String enchantedBookNameCase(ItemStack stack) {
-		final NBTTagList enchants = ItemEnchantedBook.getEnchantments(stack);
+		final NbtList enchants = EnchantedBookItem.getStoredEnchantments(stack);
 		final List<String> names = new ArrayList<>();
-		for (int i = 0; i < enchants.tagCount(); i++) {
-			final NBTTagCompound enchantTag = enchants.getCompoundTagAt(i);
-			final Enchantment enchant = Enchantment.getEnchantmentByLocation(enchantTag.getString("id"));
+		for (int i = 0; i < enchants.size(); i++) {
+			final NbtCompound enchantTag = enchants.getCompound(i);
+			final Enchantment enchant = Enchantment.byKey(enchantTag.getString("id"));
 			if (enchant != null) {
-				names.add(enchant.getTranslatedName(enchants.getCompoundTagAt(i).getInteger("lvl")));
+				names.add(enchant.getName(enchants.getCompound(i).getInt("lvl")));
 			}
 		}
 
 		Collections.sort(names);
 		final String enchantNames = StringUtils.join(names, " ");
-		return stack.getItem().toString() + " " + enchants.tagCount() + " " + enchantNames;
+		return stack.getItem().toString() + " " + enchants.size() + " " + enchantNames;
 	}
 
 	private static String toolDuribilityCase(ItemStack stack) {
-		return stack.getItem().toString() + stack.getItemDamage();
+		return stack.getItem().toString() + stack.getDamage();
 	}
 }

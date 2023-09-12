@@ -1,18 +1,18 @@
 package si.bismuth.utils;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockShulkerBox;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.inventory.IInventory;
+import net.minecraft.block.ShulkerBoxBlock;
+import net.minecraft.block.entity.EnderChestBlockEntity;
+import net.minecraft.block.entity.HopperBlockEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.tileentity.TileEntityEnderChest;
-import net.minecraft.tileentity.TileEntityHopper;
-import net.minecraft.util.NonNullList;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.util.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import si.bismuth.MCServer;
-import si.bismuth.network.BisPacketSearchForItem;
+import si.bismuth.network.SearchForItemPacket;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -20,10 +20,10 @@ import java.util.List;
 
 // Stolen from/based on code from https://github.com/kyrptonaught/Inventory-Sorter
 public class InventoryHelper {
-	public static void sortInv(IInventory inv, int startSlot, int invSize) {
+	public static void sortInv(Inventory inv, int startSlot, int invSize) {
 		final List<ItemStack> stacks = new ArrayList<>();
 		for (int i = 0; i < invSize; i++) {
-			addStackWithMerge(stacks, inv.getStackInSlot(startSlot + i));
+			addStackWithMerge(stacks, inv.getStack(startSlot + i));
 		}
 
 		if (stacks.isEmpty()) {
@@ -32,7 +32,7 @@ public class InventoryHelper {
 
 		stacks.sort(Comparator.comparing(SortCases::getStringForSort));
 		for (int i = 0; i < invSize; i++) {
-			inv.setInventorySlotContents(startSlot + i, i < stacks.size() ? stacks.get(i) : ItemStack.EMPTY);
+			inv.setStack(startSlot + i, i < stacks.size() ? stacks.get(i) : ItemStack.EMPTY);
 		}
 
 		inv.markDirty();
@@ -43,7 +43,7 @@ public class InventoryHelper {
 			return;
 		}
 
-		if (newStack.isStackable() && newStack.getCount() != newStack.getMaxStackSize()) {
+		if (newStack.isStackable() && newStack.getSize() != newStack.getMaxSize()) {
 			for (int j = stacks.size() - 1; j >= 0; j--) {
 				final ItemStack oldStack = stacks.get(j);
 				if (canMergeItems(newStack, oldStack)) {
@@ -59,14 +59,14 @@ public class InventoryHelper {
 	}
 
 	private static void combineStacks(ItemStack first, ItemStack second) {
-		if (first.getMaxStackSize() >= first.getCount() + second.getCount()) {
-			first.grow(second.getCount());
-			second.setCount(0);
+		if (first.getMaxSize() >= first.getSize() + second.getSize()) {
+			first.increase(second.getSize());
+			second.setSize(0);
 		}
 
-		final int maxInsertAmount = Math.min(first.getMaxStackSize() - first.getCount(), second.getCount());
-		first.grow(maxInsertAmount);
-		second.shrink(maxInsertAmount);
+		final int maxInsertAmount = Math.min(first.getMaxSize() - first.getSize(), second.getSize());
+		first.increase(maxInsertAmount);
+		second.decrease(maxInsertAmount);
 	}
 
 	private static boolean canMergeItems(ItemStack first, ItemStack second) {
@@ -74,11 +74,11 @@ public class InventoryHelper {
 			return false;
 		}
 
-		if (first.getCount() >= first.getMaxStackSize() || second.getCount() >= second.getMaxStackSize()) {
+		if (first.getSize() >= first.getMaxSize() || second.getSize() >= second.getMaxSize()) {
 			return false;
 		}
 
-		return ItemStack.areItemsEqual(first, second);
+		return ItemStack.matchesItem(first, second);
 	}
 
 	public static boolean areItemStacksEqualIgnoringCount(ItemStack first, ItemStack second) {
@@ -86,30 +86,30 @@ public class InventoryHelper {
 			return true;
 		} else if (first.getItem() != second.getItem()) {
 			return false;
-		} else if (first.getItemDamage() != second.getItemDamage()) {
+		} else if (first.getDamage() != second.getDamage()) {
 			return false;
 		} else {
-			return first.getTagCompound() == null || first.getTagCompound().equals(second.getTagCompound());
+			return first.getNbt() == null || first.getNbt().equals(second.getNbt());
 		}
 	}
 
-	public static void processFindItem(EntityPlayerMP player, ItemStack stack) {
+	public static void processFindItem(ServerPlayerEntity player, ItemStack stack) {
 		if (stack.isEmpty()) {
 			return;
 		}
 
 		final int range = 16;
-		final NonNullList<BlockPos> positions = NonNullList.create();
+		final DefaultedList<BlockPos> positions = DefaultedList.ofNull();
 		for (int i = -range; i <= range; i++) {
 			for (int j = -range; j <= range; j++) {
 				for (int k = -range; k <= range; k++) {
-					final int x = i + player.getPosition().getX();
-					final int y = j + player.getPosition().getY();
-					final int z = k + player.getPosition().getZ();
+					final int x = i + player.getSourceBlockPos().getX();
+					final int y = j + player.getSourceBlockPos().getY();
+					final int z = k + player.getSourceBlockPos().getZ();
 					final BlockPos pos = new BlockPos(x, y, z);
-					IInventory container = TileEntityHopper.getInventoryAtPosition(player.world, x, y, z);
-					if (player.world.getTileEntity(pos) instanceof TileEntityEnderChest) {
-						container = player.getInventoryEnderChest();
+					Inventory container = HopperBlockEntity.getInventoryAt(player.world, x, y, z);
+					if (player.world.getBlockEntity(pos) instanceof EnderChestBlockEntity) {
+						container = player.getEnderChestInventory();
 					}
 
 					//noinspection ConstantConditions
@@ -117,17 +117,17 @@ public class InventoryHelper {
 						continue;
 					}
 
-					for (int s = 0; s < container.getSizeInventory(); s++) {
-						final ItemStack stackInSlot = container.getStackInSlot(s);
+					for (int s = 0; s < container.getSize(); s++) {
+						final ItemStack stackInSlot = container.getStack(s);
 						if (InventoryHelper.areItemStacksEqualIgnoringCount(stack, stackInSlot)) {
 							positions.add(pos);
 							break;
-						} else if (Block.getBlockFromItem(stackInSlot.getItem()) instanceof BlockShulkerBox) {
-							final NBTTagCompound tag = stackInSlot.getTagCompound();
-							if (tag != null && tag.hasKey("BlockEntityTag", 10)) {
-								final NBTTagList list = tag.getCompoundTag("BlockEntityTag").getTagList("Items", 10);
-								for (int b = 0; b < list.tagCount(); b++) {
-									final NBTTagCompound compound = list.getCompoundTagAt(b);
+						} else if (Block.byItem(stackInSlot.getItem()) instanceof ShulkerBoxBlock) {
+							final NbtCompound tag = stackInSlot.getNbt();
+							if (tag != null && tag.isType("BlockEntityTag", 10)) {
+								final NbtList list = tag.getCompound("BlockEntityTag").getList("Items", 10);
+								for (int b = 0; b < list.size(); b++) {
+									final NbtCompound compound = list.getCompound(b);
 									if (InventoryHelper.areItemStacksEqualIgnoringCount(stack, new ItemStack(compound))) {
 										positions.add(pos);
 										break;
@@ -140,6 +140,6 @@ public class InventoryHelper {
 			}
 		}
 
-		MCServer.pcm.sendPacketToPlayer(player, new BisPacketSearchForItem(positions));
+		MCServer.pcm.sendPacketToPlayer(player, new SearchForItemPacket(positions));
 	}
 }

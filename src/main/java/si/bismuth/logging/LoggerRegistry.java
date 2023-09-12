@@ -1,6 +1,6 @@
 package si.bismuth.logging;
 
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 
 import java.lang.reflect.Field;
@@ -87,13 +87,13 @@ public class LoggerRegistry {
 		setAccess(logger);
 	}
 
-	public static void playerConnected(EntityPlayer player) {
+	public static void playerConnected(PlayerEntity player) {
 		for (Logger log : loggerRegistry.values()) {
 			log.onPlayerConnect(player);
 		}
 	}
 
-	public static void playerDisconnected(EntityPlayer player) {
+	public static void playerDisconnected(PlayerEntity player) {
 		for (Logger log : loggerRegistry.values()) {
 			log.onPlayerDisconnect(player);
 		}

@@ -1,12 +1,12 @@
 package si.bismuth.commands;
 
-import net.minecraft.command.CommandBase;
-import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.AbstractCommand;
+import net.minecraft.server.command.source.CommandSource;
 
-abstract class CommandBismuthBase extends CommandBase {
+abstract class CommandBismuthBase extends AbstractCommand {
 	@Override
-	public boolean checkPermission(MinecraftServer server, ICommandSender sender) {
+	public boolean canUse(MinecraftServer server, CommandSource sender) {
 		return true;
 	}
 

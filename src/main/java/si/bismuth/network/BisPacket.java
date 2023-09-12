@@ -1,21 +1,20 @@
 package si.bismuth.network;
 
 import io.netty.buffer.Unpooled;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.network.PacketBuffer;
-
 import java.io.IOException;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
 
 public abstract class BisPacket {
-	private PacketBuffer data = new PacketBuffer(Unpooled.buffer());
+	private PacketByteBuf data = new PacketByteBuf(Unpooled.buffer());
 
 	public abstract void writePacketData();
 
-	public abstract void readPacketData(PacketBuffer buf) throws IOException;
+	public abstract void readPacketData(PacketByteBuf buf) throws IOException;
 
-	public abstract void processPacket(EntityPlayerMP player);
+	public abstract void processPacket(ServerPlayerEntity player);
 
-	public PacketBuffer getPacketBuffer() {
+	public PacketByteBuf getPacketBuffer() {
 		return this.data;
 	}
 }

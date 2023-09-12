@@ -1,7 +1,5 @@
 package si.bismuth.logging;
 
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.text.ITextComponent;
 import si.bismuth.MCServer;
 import si.bismuth.utils.HUDController;
 
@@ -10,24 +8,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.text.Text;
 
 public abstract class LogHandler {
 	private static final LogHandler CHAT = new LogHandler() {
 		@Override
-		public void handle(EntityPlayerMP player, ITextComponent[] message, Object[] commandParams) {
+		public void handle(ServerPlayerEntity player, Text[] message, Object[] commandParams) {
 			Arrays.stream(message).forEach(player::sendMessage);
 		}
 	};
 	static final LogHandler HUD = new LogHandler() {
 		@Override
-		public void handle(EntityPlayerMP player, ITextComponent[] message, Object[] commandParams) {
-			for (ITextComponent m : message)
+		public void handle(ServerPlayerEntity player, Text[] message, Object[] commandParams) {
+			for (Text m : message)
 				HUDController.addMessage(player, m);
 		}
 
 		@Override
 		public void onRemovePlayer(String playerName) {
-			EntityPlayerMP player = MCServer.server.getPlayerList().getPlayerByUsername(playerName);
+			ServerPlayerEntity player = MCServer.server.getPlayerManager().get(playerName);
 			if (player != null)
 				HUDController.clear_player(player);
 		}
@@ -53,7 +53,7 @@ public abstract class LogHandler {
 		return CREATORS.keySet().stream().sorted().collect(Collectors.toList());
 	}
 
-	public abstract void handle(EntityPlayerMP player, ITextComponent[] message, Object[] commandParams);
+	public abstract void handle(ServerPlayerEntity player, Text[] message, Object[] commandParams);
 
 	public void onRemovePlayer(String playerName) {
 		// noop

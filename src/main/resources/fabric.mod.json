@@ -1,0 +1,26 @@
+{
+	"schemaVersion": 1,
+	"id": "bismuthserver",
+	"version": "${version}",
+	"name": "Bismuth Server",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://example.com/",
+		"sources": "https://github.com/OrnitheMC/ornithe-template-mod"
+	},
+	"environment": "*",
+	"entrypoints": {
+	},
+	"mixins": [
+		"mixins.bismuthserver.json",
+		"mixins.bismuthserver.movablete.json",
+		"mixins.bismuthserver.ebictranslononation.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.14.21",
+		"minecraft": "1.12.2"
+	}
+}

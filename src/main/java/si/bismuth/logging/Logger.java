@@ -1,10 +1,9 @@
 package si.bismuth.logging;
 
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.ITextComponent;
-
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -91,19 +90,19 @@ public class Logger {
 
 	public void log(lMessage messagePromise, Object... commandParams) {
 		for (Map.Entry<String, String> en : subscribedOnlinePlayers.entrySet()) {
-			EntityPlayerMP player = playerFromName(en.getKey());
+			ServerPlayerEntity player = playerFromName(en.getKey());
 			if (player != null) {
-				ITextComponent[] messages = messagePromise.get(en.getValue(), player);
+				Text[] messages = messagePromise.get(en.getValue(), player);
 				if (messages != null)
 					sendPlayerMessage(en.getKey(), player, messages, commandParams);
 			}
 		}
 	}
 
-	public void log(Supplier<ITextComponent[]> messagePromise, Object... commandParams) {
-		ITextComponent[] cannedMessages = null;
+	public void log(Supplier<Text[]> messagePromise, Object... commandParams) {
+		Text[] cannedMessages = null;
 		for (Map.Entry<String, String> en : subscribedOnlinePlayers.entrySet()) {
-			EntityPlayerMP player = playerFromName(en.getKey());
+			ServerPlayerEntity player = playerFromName(en.getKey());
 			if (player != null) {
 				if (cannedMessages == null)
 					cannedMessages = messagePromise.get();
@@ -112,18 +111,18 @@ public class Logger {
 		}
 	}
 
-	private void sendPlayerMessage(String playerName, EntityPlayerMP player, ITextComponent[] messages, Object[] commandParams) {
+	private void sendPlayerMessage(String playerName, ServerPlayerEntity player, Text[] messages, Object[] commandParams) {
 		handlers.getOrDefault(playerName, defaultHandler).handle(player, messages, commandParams);
 	}
 
 	/**
 	 * Gets the {@code EntityPlayer} instance for a player given their UUID. Returns null if they are offline.
 	 */
-	private EntityPlayerMP playerFromName(String name) {
-		return server.getPlayerList().getPlayerByUsername(name);
+	private ServerPlayerEntity playerFromName(String name) {
+		return server.getPlayerManager().get(name);
 	}
 
-	void onPlayerConnect(EntityPlayer player) {
+	void onPlayerConnect(PlayerEntity player) {
 		// If the player was subscribed to the log and offline, move them to the set of online subscribers.
 		String playerName = player.getName();
 		if (subscribedOfflinePlayers.containsKey(playerName)) {
@@ -133,7 +132,7 @@ public class Logger {
 		LoggerRegistry.setAccess(this);
 	}
 
-	void onPlayerDisconnect(EntityPlayer player) {
+	void onPlayerDisconnect(PlayerEntity player) {
 		// If the player was subscribed to the log, move them to the set of offline subscribers.
 		String playerName = player.getName();
 		if (subscribedOnlinePlayers.containsKey(playerName)) {
@@ -157,6 +156,6 @@ public class Logger {
 	 */
 	@FunctionalInterface
 	public interface lMessage {
-		ITextComponent[] get(String playerOption, EntityPlayer player);
+		Text[] get(String playerOption, PlayerEntity player);
 	}
 }
